@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BrokeAnt Marketplace - Melville</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .user-info {
+      color: #ffb34d;
+      font-size: 12px;
+      text-align: right;
+    }
+    
+    .btn-logout {
+      background: #ffb34d;
+      color: #402600;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .btn-logout:hover {
+      background: #ff9d1f;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 10px;
+      padding: 10px;
+      margin-top: 60px;
+      height: calc(100vh - 70px);
+    }
+    
+    .left-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .right-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      align-content: start;
+    }
+    
+    .form-section h2 {
+      color: #133d60;
+      font-size: 16px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #ffb34d;
+      padding-bottom: 10px;
+    }
+    
+    .ads-remaining {
+      background: #fff3cd;
+      border: 1px solid #ffb34d;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #133d60;
+      font-size: 13px;
+    }
+    
+    .ads-remaining.warning {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    
+    .form-group {
+      margin-bottom: 12px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 50px;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #ffb34d;
+      box-shadow: 0 0 5px rgba(255, 179, 77, 0.3);
+    }
+    
+    .btn-submit {
+      width: 100%;
+      padding: 10px;
+      background: #ffb34d;
+      color: #402600;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .btn-submit:hover {
+      background: #ff9d1f;
+    }
+    
+    .btn-submit:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .payment-prompt {
+      background: #f8d7da;
+      border: 2px solid #f5c6cb;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #721c24;
+      font-size: 12px;
+    }
+    
+    .payment-prompt h3 {
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    
+    .btn-pay {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    
+    .btn-pay:hover {
+      background: #218838;
+    }
+    
+    .item-block {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: visible;
+      cursor: pointer;
+    }
+    
+    .item-block img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+    
+    .item-block .no-image {
+      width: 100%;
+      height: 120px;
+      background: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 11px;
+    }
+    
+    .item-block .content {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+      gap: 8px;
+    }
+    
+    .item-block h3 {
+      color: #133d60;
+      font-size: 13px;
+      margin: 0;
+      padding: 0;
+      font-weight: 600;
+      line-height: 1.3;
+      word-wrap: break-word;
+      overflow: visible;
+    }
+    
+    .item-block p {
+      color: #666;
+      font-size: 10px;
+      margin-bottom: 4px;
+    }
+    
+    .item-price {
+      color: #ffb34d;
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+      background: white;
+      margin: 5% auto;
+      padding: 30px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .close-modal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close-modal:hover {
+      color: black;
+    }
+    
+    .modal img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .modal h1 {
+      color: #133d60;
+      margin-top: 0;
+      font-size: 20px;
+    }
+    
+    .modal .price {
+      color: #ffb34d;
+      font-size: 20px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+    
+    .modal .contact {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-size: 13px;
+    }
+    
+    .modal a {
+      color: #133d60;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    
+    .btn-edit {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .btn-edit:hover {
+      background: #0056b3;
+    }
+    
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .btn-delete:hover {
+      background: #c82333;
+    }
+    
+    .auth-modal-content {
+      background: white;
+      margin: 10% auto;
+      padding: 40px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+    
+    .auth-modal-content h2 {
+      color: #133d60;
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+    
+    .auth-button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .auth-button-group button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏪 BrokeAnt Marketplace - Melville</h1>
+  <div class="header-right">
+    <div class="user-info">
+      <div id="userEmail" style="display:none;"></div>
+      <div id="userAds" style="display:none;"></div>
+    </div>
+    <button id="btnLogout" class="btn-logout" style="display:none;" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<!-- Login/Register Modal -->
+<div id="authModal" class="modal" style="display: block; z-index: 2000;">
+  <div class="auth-modal-content">
+    <h2>Welcome to BrokeAnt!</h2>
+    
+    <div id="authForm">
+      <div class="form-group">
+        <label>Email:</label>
+        <input type="email" id="authEmail" placeholder="your@email.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Password:</label>
+        <input type="password" id="authPassword" placeholder="Enter password" required>
+      </div>
+      
+      <div class="auth-button-group">
+        <button class="btn-submit" onclick="registerUser()">Create Account</button>
+        <button class="btn-submit" style="background: #6c757d;" onclick="loginUser()">Login</button>
+      </div>
+      <small style="display: block; color: #666; text-align: center; margin-top: 15px;">New user? Create account includes 20 free ads for $2 CAD</small>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="mainContainer" style="display: none;">
+  <div class="left-panel">
+    <div class="form-section">
+      <h2>📝 Post Your Item</h2>
+      
+      <div id="adsRemainingBox" class="ads-remaining">
+        Ads Remaining: <span id="adsCount">20</span>
+      </div>
+      
+      <div id="paymentPromptBox" style="display: none;">
+        <div class="payment-prompt">
+          <h3>Out of Ads!</h3>
+          <p>Get 20 more ads for $2 CAD</p>
+          <button class="btn-pay" onclick="buyMoreAds()">Pay $2 CAD</button>
+        </div>
+      </div>
+      
+      <form id="itemForm" style="display: none;">
+        <div class="form-group">
+          <label>Item Type:</label>
+          <select id="itemType" required>
+            <option value="">-- Select --</option>
+            <option value="For Sale">For Sale</option>
+            <option value="Want Ad">Want Ad</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Item Name:</label>
+          <input type="text" id="itemName" placeholder="e.g., Bike" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Description:</label>
+          <textarea id="itemDesc" placeholder="Describe..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Price (optional):</label>
+          <input type="text" id="itemPrice" placeholder="$50">
+        </div>
+        
+        <div class="form-group">
+          <label>Image URL:</label>
+          <input type="text" id="itemImage" placeholder="https://example.com/image.jpg">
+        </div>
+        
+        <button type="button" class="btn-submit" onclick="postItem()">Post Item</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="right-panel" id="itemsContainer">
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeModal()">&times;</span>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeEditModal()">&times;</span>
+    <h2 style="color: #133d60; margin-bottom: 20px;">Edit Item</h2>
+    <form id="editForm">
+      <div class="form-group">
+        <label>Item Type:</label>
+        <select id="editItemType" required>
+          <option value="For Sale">For Sale</option>
+          <option value="Want Ad">Want Ad</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Item Name:</label>
+        <input type="text" id="editItemName" required>
+      </div>
+      <div class="form-group">
+        <label>Description:</label>
+        <textarea id="editItemDesc"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Price (optional):</label>
+        <input type="text" id="editItemPrice">
+      </div>
+      <div class="form-group">
+        <label>Image URL:</label>
+        <input type="text" id="editItemImage">
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-submit" onclick="saveEditItem()" style="flex: 1;">Save Changes</button>
+        <button type="button" class="btn-submit" style="background: #6c757d; flex: 1;" onclick="closeEditModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const CURRENT_CITY = 'melville';
+  const INITIAL_ADS = 20;
+  const ADS_COST = 2;
+  
+  function getAllItems() {
+    const items = localStorage.getItem('brokeant_all_items');
+    return items ? JSON.parse(items) : [];
+  }
+  
+  function getCityItems() {
+    return getAllItems().filter(item => item.city === CURRENT_CITY);
+  }
+  
+  function saveItems(items) {
+    localStorage.setItem('brokeant_all_items', JSON.stringify(items));
+  }
+  
+  function getAllUsers() {
+    const users = localStorage.getItem('brokeant_users');
+    return users ? JSON.parse(users) : [];
+  }
+  
+  function saveUsers(users) {
+    localStorage.setItem('brokeant_users', JSON.stringify(users));
+  }
+  
+  function getCurrentUser() {
+    const email = localStorage.getItem('brokeant_current_user');
+    if (!email) return null;
+    return getAllUsers().find(u => u.email === email) || null;
+  }
+  
+  function setCurrentUser(email) {
+    localStorage.setItem('brokeant_current_user', email);
+  }
+  
+  function registerUser() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    
+    if (!email || !password) {
+      alert('Please enter email and password');
+      return;
+    }
+    
+    const users = getAllUsers();
+    if (users.find(u => u.email === email)) {
+      alert('Account exists. Use Login.');
+      return;
+    }
+    
+    users.push({
+      email: email,
+      password: password,
+      ads_remaining: INITIAL_ADS,
+      created_at: new Date().toISOString(),
+      total_purchases: 1
+    });
+    
+    saveUsers(users);
+    setCurrentUser(email);
+    alert(`Account created! You have ${INITIAL_ADS} ads.`);
+    loadAuthUI();
+  }
+  
+  function loginUser() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    
+    if (!email || !password) {
+      alert('Please enter email and password');
+      return;
+    }
+    
+    const user = getAllUsers().find(u => u.email === email && u.password === password);
+    if (!user) {
+      alert('Invalid email or password');
+      return;
+    }
+    
+    setCurrentUser(email);
+    loadAuthUI();
+  }
+  
+  function logout() {
+    localStorage.removeItem('brokeant_current_user');
+    loadAuthUI();
+  }
+  
+  function loadAuthUI() {
+    const user = getCurrentUser();
+    const authModal = document.getElementById('authModal');
+    const mainContainer = document.getElementById('mainContainer');
+    
+    if (user) {
+      authModal.style.display = 'none';
+      mainContainer.style.display = 'grid';
+      document.getElementById('btnLogout').style.display = 'block';
+      document.getElementById('userEmail').textContent = user.email;
+      document.getElementById('userEmail').style.display = 'block';
+      updateAdsDisplay();
+      loadCityItems();
+    } else {
+      authModal.style.display = 'block';
+      mainContainer.style.display = 'none';
+      document.getElementById('btnLogout').style.display = 'none';
+      document.getElementById('authEmail').value = '';
+      document.getElementById('authPassword').value = '';
+    }
+  }
+  
+  function updateAdsDisplay() {
+    const user = getCurrentUser();
+    if (!user) return;
+    
+    document.getElementById('adsCount').textContent = user.ads_remaining;
+    document.getElementById('userAds').textContent = `Ads: ${user.ads_remaining}`;
+    document.getElementById('userAds').style.display = 'block';
+    
+    const adsBox = document.getElementById('adsRemainingBox');
+    const itemForm = document.getElementById('itemForm');
+    const paymentPrompt = document.getElementById('paymentPromptBox');
+    
+    if (user.ads_remaining <= 0) {
+      adsBox.classList.add('warning');
+      itemForm.style.display = 'none';
+      paymentPrompt.style.display = 'block';
+    } else {
+      adsBox.classList.remove('warning');
+      itemForm.style.display = 'block';
+      paymentPrompt.style.display = 'none';
+    }
+  }
+  
+  function buyMoreAds() {
+    const user = getCurrentUser();
+    if (!user) return;
+    
+    alert(`Processing $${ADS_COST} CAD payment...\n[Demo: Stripe integration in production]`);
+    
+    user.ads_remaining += INITIAL_ADS;
+    user.total_purchases = (user.total_purchases || 1) + 1;
+    
+    const users = getAllUsers();
+    const idx = users.findIndex(u => u.email === user.email);
+    users[idx] = user;
+    saveUsers(users);
+    
+    alert(`Payment done! You have ${user.ads_remaining} ads now.`);
+    updateAdsDisplay();
+  }
+  
+  function removePhoneNumbers(text) {
+    if (!text) return text;
+    return text.replace(/(\+?1?\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g, '');
+  }
+  
+  function filterLanguage(text) {
+    if (!text) return text;
+    const badWords = ['damn', 'hell', 'crap', 'ass', 'shit', 'bitch', 'fuck', 'dick', 'cunt', 'piss'];
+    let filtered = text;
+    badWords.forEach(word => {
+      const regex = new RegExp('\\b' + word + '\\b', 'gi');
+      filtered = filtered.replace(regex, '*'.repeat(word.length));
+    });
+    return filtered;
+  }
+  
+  function openModal(itemType, itemName, itemDesc, itemPrice, itemImage, itemEmail, itemId) {
+    const modalBody = document.getElementById('modalBody');
+    const user = getCurrentUser();
+    const isOwner = user && user.email === itemEmail;
+    let imageHTML = itemImage ? `<img src="${itemImage}" alt="${itemName}" onerror="this.style.display='none';">` : '';
+    
+    let actionButtons = '';
+    if (isOwner) {
+      actionButtons = `
+        <div class="modal-actions">
+          <button class="btn-edit" onclick="openEditModal(${itemId})">Edit</button>
+          <button class="btn-delete" onclick="deleteItem(${itemId})">Delete</button>
+        </div>
+      `;
+    }
+    
+    modalBody.innerHTML = `
+      ${imageHTML}
+      <h1>${itemType}: ${itemName}</h1>
+      <p>${itemDesc || 'No description'}</p>
+      ${itemPrice ? `<div class="price">${itemPrice}</div>` : ''}
+      <div class="contact">
+        <strong>Contact Seller:</strong><br>
+        <a href="mailto:${itemEmail}">${itemEmail}</a>
+      </div>
+      ${actionButtons}
+    `;
+    
+    document.getElementById('detailModal').style.display = 'block';
+  }
+  
+  function closeModal() {
+    document.getElementById('detailModal').style.display = 'none';
+  }
+  
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+  }
+  
+  function openEditModal(itemId) {
+    const allItems = getAllItems();
+    const item = allItems.find(i => i.id === itemId);
+    
+    if (!item) {
+      alert('Item not found');
+      return;
+    }
+    
+    document.getElementById('editItemType').value = item.itemType;
+    document.getElementById('editItemName').value = item.itemName;
+    document.getElementById('editItemDesc').value = item.itemDesc;
+    document.getElementById('editItemPrice').value = item.itemPrice;
+    document.getElementById('editItemImage').value = item.itemImage;
+    
+    document.getElementById('editModal').dataset.itemId = itemId;
+    document.getElementById('detailModal').style.display = 'none';
+    document.getElementById('editModal').style.display = 'block';
+  }
+  
+  function saveEditItem() {
+    const itemId = parseInt(document.getElementById('editModal').dataset.itemId);
+    let itemType = document.getElementById('editItemType').value;
+    let itemName = document.getElementById('editItemName').value;
+    let itemDesc = document.getElementById('editItemDesc').value;
+    let itemPrice = document.getElementById('editItemPrice').value;
+    let itemImage = document.getElementById('editItemImage').value;
+    
+    if (!itemType || !itemName) {
+      alert('Fill in Item Type and Item Name');
+      return;
+    }
+    
+    itemDesc = removePhoneNumbers(itemDesc);
+    itemDesc = filterLanguage(itemDesc);
+    
+    const allItems = getAllItems();
+    const index = allItems.findIndex(i => i.id === itemId);
+    
+    if (index !== -1) {
+      allItems[index].itemType = itemType;
+      allItems[index].itemName = itemName;
+      allItems[index].itemDesc = itemDesc;
+      allItems[index].itemPrice = itemPrice;
+      allItems[index].itemImage = itemImage;
+      saveItems(allItems);
+      
+      alert('Item updated!');
+      closeEditModal();
+      loadCityItems();
+    }
+  }
+  
+  function deleteItem(itemId) {
+    if (confirm('Delete this item?')) {
+      const allItems = getAllItems();
+      const filtered = allItems.filter(i => i.id !== itemId);
+      saveItems(filtered);
+      
+      const user = getCurrentUser();
+      user.ads_remaining += 1; // Refund the ad
+      const users = getAllUsers();
+      const idx = users.findIndex(u => u.email === user.email);
+      users[idx] = user;
+      saveUsers(users);
+      
+      alert('Item deleted! Ad refunded.');
+      closeModal();
+      updateAdsDisplay();
+      loadCityItems();
+    }
+  }
+  
+  window.onclick = function(event) {
+    const modal = document.getElementById('detailModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  }
+  
+  function postItem() {
+    const user = getCurrentUser();
+    if (!user || user.ads_remaining <= 0) {
+      alert('No ads left. Buy more ads.');
+      return;
+    }
+    
+    const itemType = document.getElementById('itemType').value;
+    const itemName = document.getElementById('itemName').value;
+    let itemDesc = document.getElementById('itemDesc').value;
+    const itemPrice = document.getElementById('itemPrice').value;
+    const itemImage = document.getElementById('itemImage').value;
+    
+    if (!itemType || !itemName) {
+      alert('Fill in Item Type and Item Name');
+      return;
+    }
+    
+    itemDesc = removePhoneNumbers(itemDesc);
+    itemDesc = filterLanguage(itemDesc);
+    
+    const newItem = {
+      id: Date.now(),
+      city: CURRENT_CITY,
+      user_email: user.email,
+      itemType: itemType,
+      itemName: itemName,
+      itemDesc: itemDesc,
+      itemPrice: itemPrice,
+      itemImage: itemImage,
+      posted: new Date().toISOString()
+    };
+    
+    const allItems = getAllItems();
+    allItems.push(newItem);
+    saveItems(allItems);
+    
+    user.ads_remaining -= 1;
+    const users = getAllUsers();
+    const idx = users.findIndex(u => u.email === user.email);
+    users[idx] = user;
+    saveUsers(users);
+    
+    displayItem(newItem);
+    updateAdsDisplay();
+    document.getElementById('itemForm').reset();
+    alert('Posted! ' + user.ads_remaining + ' ads left.');
+  }
+  
+  function displayItem(item) {
+    const itemBlock = document.createElement('div');
+    itemBlock.className = 'item-block';
+    
+    let imageHTML = '';
+    if (item.itemImage) {
+      imageHTML = `<img src="${item.itemImage}" alt="${item.itemName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="no-image" style="display:none;">Image not found</div>`;
+    } else {
+      imageHTML = '<div class="no-image">No Image</div>';
+    }
+    
+    itemBlock.innerHTML = `
+      ${imageHTML}
+      <div class="content">
+        <h3>${item.itemType}: ${item.itemName}</h3>
+        ${item.itemPrice ? `<div class="item-price">${item.itemPrice}</div>` : '<div class="item-price">Contact for price</div>'}
+      </div>
+    `;
+    
+    itemBlock.addEventListener('click', function() {
+      openModal(item.itemType, item.itemName, item.itemDesc, item.itemPrice, item.itemImage, item.user_email, item.id);
+    });
+    
+    document.getElementById('itemsContainer').appendChild(itemBlock);
+  }
+  
+  function loadCityItems() {
+    const container = document.getElementById('itemsContainer');
+    container.innerHTML = '';
+    
+    const cityItems = getCityItems();
+    if (cityItems.length === 0) {
+      container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No items yet.</p>';
+    } else {
+      cityItems.forEach(item => displayItem(item));
+    }
+  }
+  
+  window.addEventListener('load', loadAuthUI);
+</script>
+
+</body>
+</html>
+

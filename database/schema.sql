@@ -1,0 +1,17 @@
+CREATE DATABASE brokeant;
+USE brokeant;
+
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(20),
+  city VARCHAR(50) NOT NULL,
+  reputation_score FLOAT DEFAULT 5.0,
+  total_reviews INT DEFAULT 0,
+  verified BOOLEAN DEFAULT FALSE,
+  suspended BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login TIMESTAMP
+);

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BrokeAnt Market - Select Your City</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    
+    .header-content {
+      flex: 1;
+    }
+    
+    .header h1 {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      font-size: 18px;
+      color: #ffb34d;
+      margin-bottom: 5px;
+    }
+    
+    .header .subtitle {
+      font-size: 14px;
+      color: #ccc;
+    }
+    
+    .cities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .city-card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-decoration: none;
+      color: #333;
+    }
+    
+    .city-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    
+    .city-card h2 {
+      color: #133d60;
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+    
+    .city-card p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .city-card .btn {
+      display: inline-block;
+      background: #ffb34d;
+      color: #402600;
+      padding: 12px 30px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.3s ease;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .city-card .btn:hover {
+      background: #ff9d1f;
+    }
+    
+    .city-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .footer {
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      margin-top: 40px;
+    }
+    
+    .alfred-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .alfred-image {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      object-fit: cover;
+      border: 3px solid #ffb34d;
+    }
+    
+    .alfred-name {
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    @media (max-width: 600px) {
+      .header h1 {
+        font-size: 32px;
+      }
+      
+      .cities-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="alfred-section">
+      <img src="./c8e9233c-b606-458b-a4e2-5c16b2696367.png" alt="Alfred" class="alfred-image">
+      <p class="alfred-name">Hi, I am Alfred</p>
+    </div>
+    <div class="header-content">
+      <h1>BrokeAnt Marketplace</h1>
+      <p>Buy, Sell & Trade Locally</p>
+      <p class="subtitle">Select your city to get started</p>
+    </div>
+  </div>
+  
+  <div class="cities-grid">
+    <a href="melville/index.html" class="city-card" target="_blank">
+      <div class="city-icon">🏘️</div>
+      <h2>Melville</h2>
+      <p>Browse and post items in your community</p>
+      <button class="btn">Enter Marketplace</button>
+    </a>
+    
+    <a href="yorkton/index.html" class="city-card" target="_blank">
+      <div class="city-icon">🏢</div>
+      <h2>Yorkton</h2>
+      <p>Browse and post items in your community</p>
+      <button class="btn">Enter Marketplace</button>
+    </a>
+    
+    <a href="regina/index.html" class="city-card" target="_blank">
+      <div class="city-icon">🌆</div>
+      <h2>Regina</h2>
+      <p>Browse and post items in your community</p>
+      <button class="btn">Enter Marketplace</button>
+    </a>
+  </div>
+  
+  <div class="footer">
+    <p>&copy; 2026 BrokeAnt Marketplace. All rights reserved.</p>
+  </div>
+</div>
+
+</body>
+</html>

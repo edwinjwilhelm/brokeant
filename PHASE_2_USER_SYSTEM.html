@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHASE 2: User Registration & Login System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    
+    h1, h2, h3 {
+      color: #133d60;
+    }
+    
+    h1 {
+      border-bottom: 3px solid #ffb34d;
+      padding-bottom: 10px;
+    }
+    
+    h2 {
+      margin-top: 30px;
+      border-left: 5px solid #ffb34d;
+      padding-left: 15px;
+    }
+    
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      border-left: 4px solid #ffb34d;
+    }
+    
+    pre code {
+      background: none;
+      padding: 0;
+    }
+    
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 20px 0;
+    }
+    
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    
+    table th {
+      background: #133d60;
+      color: white;
+    }
+    
+    table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    
+    ul, ol {
+      margin: 15px 0;
+      padding-left: 25px;
+    }
+    
+    li {
+      margin: 8px 0;
+    }
+    
+    .meta {
+      background: #e8f4f8;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+      border-left: 4px solid #133d60;
+    }
+    
+    .checklist {
+      list-style: none;
+      padding-left: 0;
+    }
+    
+    .checklist li {
+      padding-left: 25px;
+      position: relative;
+    }
+    
+    .checklist li:before {
+      content: "☐ ";
+      position: absolute;
+      left: 0;
+    }
+    
+    .warning {
+      background: #fff3cd;
+      padding: 12px;
+      border-left: 4px solid #ff9800;
+      margin: 15px 0;
+    }
+    
+    .success {
+      background: #d4edda;
+      padding: 12px;
+      border-left: 4px solid #28a745;
+      margin: 15px 0;
+    }
+    
+    @media print {
+      body {
+        margin: 0;
+        padding: 10px;
+      }
+      h1 {
+        page-break-after: avoid;
+      }
+      h2 {
+        page-break-after: avoid;
+      }
+      pre {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>PHASE 2: USER REGISTRATION & LOGIN SYSTEM</h1>
+
+<div class="meta">
+  <strong>BrokeAnt Marketplace</strong><br>
+  <strong>Timeline:</strong> Jan 29 - Feb 2, 2026 (5-7 days)<br>
+  <strong>Goal:</strong> Users can register and log in<br>
+  <strong>Revenue:</strong> $0 (user system only, no payments yet)
+</div>
+
+<hr>
+
+<h2>FOLDER STRUCTURE TO CREATE</h2>
+
+<pre><code>c:\brokeant\
+├── backend/
+│   ├── api/
+│   │   └── users.php
+│   ├── config/
+│   │   └── database.php
+│   └── middleware/
+│       └── auth.php
+├── frontend/
+│   ├── index.html (existing)
+│   ├── register.html (NEW)
+│   ├── login.html (NEW)
+│   ├── melville/ (existing)
+│   ├── yorkton/ (existing)
+│   ├── regina/ (existing)
+│   └── css/
+│       └── styles.css
+├── database/
+│   └── schema.sql
+└── README.md</code></pre>
+
+<hr>
+
+<h2>STEP 1: CREATE DATABASE SCHEMA</h2>
+
+<p><strong>File:</strong> <code>database/schema.sql</code></p>
+
+<pre><code>CREATE DATABASE brokeant;
+USE brokeant;
+
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(20),
+  city VARCHAR(50) NOT NULL,
+  reputation_score FLOAT DEFAULT 5.0,
+  total_reviews INT DEFAULT 0,
+  verified BOOLEAN DEFAULT FALSE,
+  suspended BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login TIMESTAMP
+);</code></pre>
+
+<hr>
+
+<h2>STEP 2: DATABASE CONNECTION CONFIG</h2>
+
+<p><strong>File:</strong> <code>backend/config/database.php</code></p>
+
+<pre><code>&lt;?php
+$host = 'localhost';
+$user = 'brokeant_user';
+$pass = 'your_strong_password_here';
+$db = 'brokeant';
+
+$conn = new mysqli($host, $user, $pass, $db);
+
+if ($conn-&gt;connect_error) {
+    die("Connection failed: " . $conn-&gt;connect_error);
+}
+
+// Set charset to UTF-8
+$conn-&gt;set_charset("utf8");
+?&gt;</code></pre>
+
+<hr>
+
+<h2>STEP 3-5: FRONTEND FILES</h2>
+
+<p>See PHASE_2_USER_SYSTEM.md for complete HTML/PHP code for:</p>
+<ul>
+  <li>register.html - Registration form</li>
+  <li>login.html - Login form</li>
+  <li>backend/api/users.php - User API</li>
+  <li>backend/middleware/auth.php - Authentication</li>
+</ul>
+
+<hr>
+
+<h2>STEP 8: DATABASE SETUP ON VPS</h2>
+
+<p>Run on VPS (via SSH):</p>
+
+<pre><code>ssh root@66.179.188.184
+
+# Login to MySQL
+mysql -u root -p
+
+# Create database and user
+CREATE DATABASE brokeant;
+CREATE USER 'brokeant_user'@'localhost' IDENTIFIED BY 'strong_password_here';
+GRANT ALL PRIVILEGES ON brokeant.* TO 'brokeant_user'@'localhost';
+FLUSH PRIVILEGES;
+exit;
+
+# Create tables
+mysql -u brokeant_user -p brokeant &lt; /var/www/brokeant/database/schema.sql</code></pre>
+
+<hr>
+
+<h2>STEP 9: GITHUB SETUP</h2>
+
+<pre><code># On your local machine
+cd c:\brokeant
+git init
+git add .
+git commit -m "Phase 2: User registration and login system"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/brokeant.git
+git push -u origin main</code></pre>
+
+<hr>
+
+<h2>STEP 10: DEPLOY TO VPS</h2>
+
+<pre><code># SSH to VPS
+ssh root@66.179.188.184
+cd /var/www/brokeant
+git pull origin main
+sudo systemctl reload nginx</code></pre>
+
+<hr>
+
+<h2>STEP 11: TEST</h2>
+
+<p>Visit: <strong>https://brokeant.com/register.html</strong></p>
+
+<ul class="checklist">
+  <li>Register new account</li>
+  <li>Try duplicate email (should fail)</li>
+  <li>Login with correct credentials</li>
+  <li>Login with wrong password (should fail)</li>
+  <li>Logout</li>
+  <li>Session persists (refresh page = still logged in)</li>
+</ul>
+
+<hr>
+
+<h2>TROUBLESHOOTING</h2>
+
+<p><strong>PHP errors?</strong></p>
+<pre><code>tail -f /var/log/nginx/error.log
+tail -f /var/log/php8.3-fpm.log</code></pre>
+
+<p><strong>Database connection fails?</strong></p>
+<ul>
+  <li>Check <code>database.php</code> password matches what you set</li>
+  <li>Verify user exists: <code>mysql -u brokeant_user -p</code></li>
+</ul>
+
+<p><strong>Files not found?</strong></p>
+<ul>
+  <li>Verify files in <code>/var/www/brokeant/backend/</code></li>
+  <li>Check nginx config: <code>sudo nginx -t</code></li>
+</ul>
+
+<hr>
+
+<h2>NEXT PHASE (Phase 3)</h2>
+
+<p>Once Phase 2 is complete, Phase 3 will add:</p>
+<ul>
+  <li>Listings table</li>
+  <li>Post item functionality</li>
+  <li>Browse listings</li>
+  <li>Edit/delete listings</li>
+</ul>
+
+<div class="success">
+  <strong>GOOD LUCK! 🚀</strong><br>
+  For complete HTML/PHP code, see PHASE_2_USER_SYSTEM.md
+</div>
+
+</body>
+</html>
