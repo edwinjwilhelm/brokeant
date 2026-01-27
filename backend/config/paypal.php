@@ -1,17 +1,14 @@
 <?php
 // PayPal Configuration - Phase 4
-// REST API credentials for live transactions
+// API credentials are stored in environment variables for security
 
 return [
     'mode' => 'live', // PayPal live mode (production)
     
-    'client_id' => 'AeWy0PVnwQL4ZrxTrcLcoZCSasIf0EellyWQ_rVT66WH8apdM-0ZkVHp5ksIOZ30Qrl8iAEF1l9DlCG5',
+    'client_id' => getenv('PAYPAL_CLIENT_ID') ?: '',
+    'secret_key' => getenv('PAYPAL_SECRET_KEY') ?: '',
     
-    // TODO: Add your PayPal Secret key here
-    // Run: grep "Secret key" and add it below
-    'secret_key' => '', // ASK USER TO PROVIDE
-    
-    'webhook_id' => '4WN31555TB3374303',
+    'webhook_id' => getenv('PAYPAL_WEBHOOK_ID') ?: '',
     'webhook_url' => 'https://brokeant.com/backend/api/webhook-paypal.php',
     
     // API endpoints

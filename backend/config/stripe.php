@@ -1,22 +1,22 @@
 <?php
 // Stripe Configuration - Phase 4
-// NOTE: These are TEST keys. Replace with LIVE keys when Stripe approves your account.
+// API keys are stored in environment variables for security
 
 return [
-    'mode' => 'test', // Change to 'live' when ready
+    'mode' => getenv('STRIPE_MODE') ?: 'test', // 'test' or 'live'
     
-    // TEST KEYS (Sandbox)
+    // TEST KEYS (loaded from environment variables)
     'test' => [
-        'publishable_key' => 'pk_test_51SuHNOCJ7AoBA52optOwCCm1VleG70TBvfSfVjMLISSegjEM6FpoZKJdyxRvancwmTxVe98P3YqnlkAaT3F32juu00qjnb1xWs',
-        'secret_key' => 'sk_test_51SuHNOCJ7AoBA52o5ksBPypq8QSGVJDN6ocqvlCmQ6dqdWYmpBfWHeCVr347I4906IKVXliCvvor2LlD2kjUQHvF005S0JQXsu',
-        'webhook_secret' => '', // Set after webhook is configured
+        'publishable_key' => getenv('STRIPE_TEST_PUBLIC_KEY') ?: '',
+        'secret_key' => getenv('STRIPE_TEST_SECRET_KEY') ?: '',
+        'webhook_secret' => getenv('STRIPE_TEST_WEBHOOK_SECRET') ?: '',
     ],
     
-    // LIVE KEYS (Production - get after Stripe verifies your business)
+    // LIVE KEYS (loaded from environment variables after Stripe verification)
     'live' => [
-        'publishable_key' => '', // Will be populated after Stripe verification
-        'secret_key' => '', // Will be populated after Stripe verification
-        'webhook_secret' => '', // Set after webhook is configured
+        'publishable_key' => getenv('STRIPE_LIVE_PUBLIC_KEY') ?: '',
+        'secret_key' => getenv('STRIPE_LIVE_SECRET_KEY') ?: '',
+        'webhook_secret' => getenv('STRIPE_LIVE_WEBHOOK_SECRET') ?: '',
     ],
     
     // Payment settings
