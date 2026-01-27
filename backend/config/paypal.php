@@ -1,5 +1,8 @@
 <?php
 // PayPal Configuration - Phase 4
+// Load environment variables first
+require_once __DIR__ . '/.env.loader.php';
+
 // API credentials are stored in environment variables for security
 
 return [
