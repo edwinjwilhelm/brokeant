@@ -51,7 +51,8 @@ function register($conn) {
     $stmt->bind_param("sssss", $email, $password_hash, $name, $city, $phone);
     
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Account created successfully!']);
+        $user_id = $stmt->insert_id;
+        echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'user_id' => $user_id]);
     } else {
         if ($conn->errno === 1062) {
             echo json_encode(['success' => false, 'message' => 'Email already registered']);
@@ -72,7 +73,7 @@ function login($conn) {
         return;
     }
     
-    $sql = "SELECT id, password_hash, name, city FROM users WHERE email = ?";
+    $sql = "SELECT id, password_hash, name, city, payment_status FROM users WHERE email = ?";
     $stmt = $conn->prepare($sql);
     
     if (!$stmt) {
@@ -86,6 +87,12 @@ function login($conn) {
     
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
+        
+        // Check if payment is verified
+        if ($row['payment_status'] !== 'verified') {
+            echo json_encode(['success' => false, 'message' => 'Please complete payment to activate your account']);
+            return;
+        }
         
         if (password_verify($password, $row['password_hash'])) {
             $_SESSION['user_id'] = $row['id'];

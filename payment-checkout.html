@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Payment - BrokeAnt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .payment-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .payment-methods {
+            margin-bottom: 30px;
+        }
+        
+        .method-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .method-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .method-tab {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: white;
+            color: #666;
+        }
+        
+        .method-tab:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .method-tab.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        
+        .method-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .method-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .stripe-form, .paypal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        
+        input, select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+        }
+        
+        #stripe-element {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .button {
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3c3;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .note {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Complete Payment</h1>
+            <p>Finish registering your BrokeAnt account</p>
+        </div>
+        
+        <div class="error" id="errorMessage"></div>
+        <div class="success" id="successMessage"></div>
+        
+        <div class="payment-info">
+            <div class="info-row">
+                <span class="info-label">Amount:</span>
+                <span class="info-value">$2.10 CAD</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Includes GST:</span>
+                <span class="info-value">5%</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Service:</span>
+                <span class="info-value">BrokeAnt Registration</span>
+            </div>
+        </div>
+        
+        <div class="note">
+            💡 This one-time $2.10 fee activates your account and gives you listing credits.
+        </div>
+        
+        <div class="payment-methods">
+            <div class="method-title">Choose Payment Method</div>
+            
+            <div class="method-tabs">
+                <div class="method-tab active" onclick="switchMethod('stripe')">
+                    💳 Card
+                </div>
+                <div class="method-tab" onclick="switchMethod('paypal')">
+                    🅿️ PayPal
+                </div>
+            </div>
+            
+            <!-- Stripe Payment -->
+            <div class="method-content stripe-form active">
+                <form id="stripeForm" onsubmit="handleStripePayment(event)">
+                    <div class="form-group">
+                        <label>Card Details</label>
+                        <div id="stripe-element"></div>
+                    </div>
+                    <button type="submit" class="button btn-primary" id="stripeButton">
+                        Pay $2.10 with Card
+                    </button>
+                    <div class="loading" id="stripeLoading">Processing payment...</div>
+                </form>
+            </div>
+            
+            <!-- PayPal Payment -->
+            <div class="method-content paypal-form">
+                <form id="paypalForm" onsubmit="handlePayPalPayment(event)">
+                    <button type="submit" class="button btn-primary" id="paypalButton">
+                        Pay $2.10 with PayPal
+                    </button>
+                    <div class="loading" id="paypalLoading">Redirecting to PayPal...</div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="/register.html">← Back to Registration</a>
+        </div>
+    </div>
+    
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- PayPal SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AeWy0PVnwQL4ZrxTrcLcoZCSasIf0EellyWQ_rVT66WH8apdM-0ZkVHp5ksIOZ30Qrl8iAEF1l9DlCG5&currency=CAD"></script>
+    
+    <script>
+        let stripePromise = null;
+        let elements = null;
+        let cardElement = null;
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        
+        // Initialize Stripe
+        async function initializeStripe() {
+            try {
+                const response = await fetch('/backend/api/payment-stripe.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'action=get_publishable_key'
+                });
+                
+                const data = await response.json();
+                stripePromise = Stripe(data.publishable_key);
+                elements = stripePromise.elements();
+                cardElement = elements.create('card');
+                cardElement.mount('#stripe-element');
+                
+                cardElement.addEventListener('change', function(event) {
+                    const errorDiv = document.querySelector('.error');
+                    if (event.error) {
+                        errorDiv.textContent = event.error.message;
+                        errorDiv.style.display = 'block';
+                    } else {
+                        errorDiv.style.display = 'none';
+                    }
+                });
+            } catch (error) {
+                showError('Failed to initialize Stripe: ' + error.message);
+            }
+        }
+        
+        // Initialize PayPal
+        async function initializePayPal() {
+            try {
+                await paypal.Buttons({
+                    createOrder(data, actions) {
+                        return actions.order.create({
+                            purchase_units: [{
+                                amount: { value: '2.10' }
+                            }]
+                        });
+                    },
+                    onApprove(data, actions) {
+                        return actions.order.capture().then(() => {
+                            capturePayPalPayment(data.orderID);
+                        });
+                    },
+                    onError(err) {
+                        showError('PayPal error: ' + err.message);
+                    }
+                }).render('#paypal-button-container');
+            } catch (error) {
+                showError('Failed to initialize PayPal: ' + error.message);
+            }
+        }
+        
+        // Switch payment method
+        function switchMethod(method) {
+            document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.method-content').forEach(content => content.classList.remove('active'));
+            
+            if (method === 'stripe') {
+                document.querySelector('[onclick="switchMethod(\'stripe\')"]').classList.add('active');
+                document.querySelector('.stripe-form').classList.add('active');
+            } else {
+                document.querySelector('[onclick="switchMethod(\'paypal\')"]').classList.add('active');
+                document.querySelector('.paypal-form').classList.add('active');
+            }
+        }
+        
+        // Handle Stripe payment
+        async function handleStripePayment(e) {
+            e.preventDefault();
+            
+            if (!userId) {
+                showError('User ID not found. Please go back and register first.');
+                return;
+            }
+            
+            const button = document.getElementById('stripeButton');
+            const loading = document.getElementById('stripeLoading');
+            
+            button.disabled = true;
+            loading.style.display = 'block';
+            
+            try {
+                const { token } = await stripePromise.createToken(cardElement);
+                
+                if (token.error) {
+                    throw new Error(token.error.message);
+                }
+                
+                const response = await fetch('/backend/api/payment-stripe.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `action=charge&stripe_token=${token.id}&user_id=${userId}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Payment successful! Redirecting to login...');
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 2000);
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                showError('Payment failed: ' + error.message);
+                button.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Handle PayPal payment
+        async function handlePayPalPayment(e) {
+            e.preventDefault();
+            
+            if (!userId) {
+                showError('User ID not found. Please go back and register first.');
+                return;
+            }
+            
+            const loading = document.getElementById('paypalLoading');
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch('/backend/api/payment-paypal.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create_order',
+                        user_id: parseInt(userId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.order_id) {
+                    // Redirect to PayPal
+                    const approvalLink = data.links.find(link => link.rel === 'approve');
+                    if (approvalLink) {
+                        window.location.href = approvalLink.href;
+                    } else {
+                        throw new Error('No approval link found');
+                    }
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                showError('PayPal error: ' + error.message);
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Capture PayPal payment
+        async function capturePayPalPayment(orderId) {
+            try {
+                const response = await fetch('/backend/api/payment-paypal.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'capture_order',
+                        order_id: orderId,
+                        user_id: parseInt(userId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Payment successful! Redirecting to login...');
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 2000);
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                showError('Payment capture failed: ' + error.message);
+            }
+        }
+        
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+        
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeStripe();
+            // PayPal initialization would go here
+        });
+    </script>
+</body>
+</html>

@@ -175,9 +175,10 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     
     if (data.success) {
       messageEl.className = 'message success';
-      messageEl.textContent = data.message + ' Redirecting to login...';
+      messageEl.textContent = data.message + ' Redirecting to payment...';
       setTimeout(() => {
-        window.location.href = '/login.html';
+        // Redirect to payment checkout with user ID
+        window.location.href = '/payment-checkout.html?user_id=' + data.user_id;
       }, 2000);
     } else {
       messageEl.className = 'message error';

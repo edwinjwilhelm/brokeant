@@ -515,8 +515,48 @@ sudo systemctl reload nginx
 
 ---
 
+## PHASE 3 - LISTINGS SYSTEM (COMPLETE ✅)
+
+**Date**: January 27, 2026
+
+### Files Created:
+- ✅ `database/listings_table.sql` - Listings table with 13 columns
+- ✅ `backend/api/listings.php` - Complete CRUD API (create, read, update, delete)
+- ✅ `post-listing.html` - Beautiful form to post items
+- ✅ `my-listings.html` - User dashboard showing their listings
+- ✅ Updated `index.html` - Shows latest listings + user controls
+- ✅ Updated `backend/api/users.php` - Added check_session function
+
+### Database Table Created:
+- listings table with: id, user_id, title, description, price, category, image_url, city, status, posted_date, expiration_date, last_updated, views
+
+### Features Implemented:
+1. **Post Listings** - Form with title, description, price, category, image, city (30-day auto-expiration)
+2. **View Listings** - Homepage displays all active listings sorted by newest first
+3. **User Dashboard** - My listings page shows user's own listings with edit/delete
+4. **Session Display** - "Welcome, [Name] from [City]" on homepage when logged in
+
+### Live Testing Results:
+- ✅ Listings table created on VPS
+- ✅ Homepage displays latest listings
+- ✅ User sees personalized greeting when logged in
+- ✅ Post listing form working
+- ✅ My listings dashboard working
+
+### Current URLs (ALL LIVE):
+- https://brokeant.com (with listings display) ✅
+- https://brokeant.com/post-listing.html ✅
+- https://brokeant.com/my-listings.html ✅
+
+---
+
+**Status**: Phase 3 complete, tested, and LIVE on VPS. Ready for Phase 4 (Payments).  
+**Next Action**: Setup Stripe & PayPal accounts for Phase 4.
+
+---
+
 *Updated by: GitHub Copilot*  
-*Last Updated: January 26, 2026 - 14:45 UTC*  
-*Project: BrokeAnt Marketplace - National Expansion Strategy*
+*Last Updated: January 27, 2026 - 14:35 UTC*  
+*Project: BrokeAnt Marketplace*
 
 
