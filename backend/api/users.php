@@ -50,14 +50,22 @@ function register($conn) {
     
     $stmt->bind_param("sssss", $email, $password_hash, $name, $city, $phone);
     
-    if ($stmt->execute()) {
-        $user_id = $stmt->insert_id;
-        echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'user_id' => $user_id]);
-    } else {
-        if ($conn->errno === 1062) {
+    try {
+        if ($stmt->execute()) {
+            $user_id = $stmt->insert_id;
+            echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'user_id' => $user_id]);
+        } else {
+            if ($conn->errno === 1062) {
+                echo json_encode(['success' => false, 'message' => 'Email already registered']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Registration failed']);
+            }
+        }
+    } catch (mysqli_sql_exception $e) {
+        if ($e->getCode() === 1062) {
             echo json_encode(['success' => false, 'message' => 'Email already registered']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Registration failed']);
+            echo json_encode(['success' => false, 'message' => 'Registration failed: ' . $e->getMessage()]);
         }
     }
     
