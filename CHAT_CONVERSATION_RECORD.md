@@ -251,7 +251,7 @@ c:\brokeant\
 
 ## PHASE 2 - USER REGISTRATION & LOGIN (COMPLETE ✅)
 
-**Dates**: January 26, 2026
+**Dates**: January 25-26, 2026
 
 ### Files Created:
 - ✅ `database/schema.sql` - Users table definition
@@ -326,13 +326,197 @@ sudo systemctl reload nginx
 
 ---
 
-**Status**: Phase 2 complete and tested. Ready for GitHub integration tomorrow. 🚀  
-**Next Action**: Set up GitHub repository and push code.
+---
+
+## PHASE 2.5 - GITHUB & DEPLOYMENT (COMPLETE ✅)
+
+**Date**: January 26, 2026, 13:55-14:15 UTC
+
+### GitHub Setup:
+- ✅ Created GitHub repository: `https://github.com/edwinjwilhelm/brokeant.git`
+- ✅ Set to PRIVATE (only owner can see)
+- ✅ Added .gitignore and README.md
+- ✅ Pushed all Phase 2 code to GitHub (all 34 objects, 9.57 MiB)
+
+### VPS Deployment:
+- ✅ Cloned entire repository to `/var/www/brokeant` via `git clone`
+- ✅ Moved login.html and register.html from frontend/ to root directory
+- ✅ Reloaded nginx to serve updated files
+
+### Live Testing:
+- ✅ Created test user: `finaltest@example.com` / `TestPass123`
+- ✅ Successfully registered new user
+- ✅ Successfully logged in with new user
+- ✅ Session management working (auto-login after registration)
+- ✅ Verified 3 total users in database:
+  1. test@example.com (me) - Melville
+  2. newuser@example.com (New User) - Yorkton  
+  3. finaltest@example.com (Final Test) - Melville
+
+### Current URLs (LIVE):
+- **Homepage**: https://brokeant.com
+- **Register**: https://brokeant.com/register.html ✅
+- **Login**: https://brokeant.com/login.html ✅
+
+### GitHub Integration Benefits:
+- ✅ Version control - all code tracked
+- ✅ Easy future updates via `git pull origin main` on VPS
+- ✅ Automatic backups on GitHub
+- ✅ Ready for team collaboration if needed
 
 ---
 
-*Recorded by: GitHub Copilot*  
-*Last Updated: January 26, 2026 - 03:30 UTC*  
-*Project: BrokeAnt Marketplace*
+## READY FOR PHASE 3 - LISTINGS SYSTEM
+
+**Estimated Start**: January 27, 2026
+
+### What Phase 3 Includes:
+1. Create `listings` table in database
+   - Fields: id, user_id, title, description, price, image_url, status, posted_date, expiration_date, city
+2. Build "Post Your Item" form (HTML/CSS/JavaScript)
+3. Create listings API (PHP) for CRUD operations
+4. Add "My Listings" dashboard
+5. Display all listings on homepage
+6. Add edit/delete functionality
+
+### Estimated Timeline: 
+- ~2-3 hours of development + testing
+- Should be complete by end of January 27
+
+### User Feedback Captured:
+- Need password reset functionality (for Phase 5+)
+- Need email verification (for Phase 5+)
+- User registration/login fully validated and working ✅
+
+---
+
+## STRATEGIC PLANNING - EXPANSION & SCALING (Jan 26 Evening)
+
+### Payment Processing Setup (Pre-Phase 4)
+
+**Both Stripe AND PayPal Required** (redundancy + user choice):
+
+1. **Stripe Account**:
+   - Email: sales@brokeant.com
+   - Business type: Sole Proprietorship (BrokeAnt)
+   - Provide personal info (name, SSN, address)
+   - Connect bank account for payouts
+   - Set commission rates
+
+2. **PayPal Business Account**:
+   - Email: sales@brokeant.com
+   - Business type: Marketplace/Classifieds
+   - Provide personal info (name, SSN, address)
+   - Same bank account connection
+   - Set payout schedule
+
+**Timeline**: Complete by Feb 8-9 (before Phase 4 payment integration)
+
+**Why Both?**: Different user preferences = higher conversion rates
+
+---
+
+### CRITICAL: Volunteer Marketplace Expansion (Phase 6+)
+
+**The Problem**:
+- Current: Only 3 hardcoded cities (Melville, Yorkton, Regina)
+- Cannot manually add 100+ Canadian cities
+- Not scalable to national marketplace
+
+**The Solution: Volunteer City Manager System**
+
+#### Architecture (Phase 6+):
+
+1. **Volunteer Request System**:
+   - Public page: "Start a Marketplace in Your City"
+   - Form captures: City name, Province, Population, Volunteer contact info
+   - Volunteers submit requests
+   - You review & approve in admin dashboard
+
+2. **Database Schema Changes**:
+   - NEW `cities` table (replaces hardcoded cities):
+     ```
+     id, name, province, population, volunteer_user_id, 
+     status (pending/active/inactive), created_date, revenue_ytd
+     ```
+   - City pages generated dynamically from database
+   - No more hardcoded city directories
+
+3. **Auto-Generation of City Marketplaces**:
+   - When you approve volunteer request:
+     - City record created in database
+     - City page generated automatically
+     - Volunteer assigned as "City Manager"
+     - City goes LIVE immediately
+
+4. **Volunteer Incentive Model** (Choose One or Hybrid):
+   - **Option A**: Revenue share - $0.50-$1.00 per listing posted
+   - **Option B**: Percentage commission - 10-20% of platform fees from their city
+   - **Option C**: Tiered: Free premium account + commission after 50 listings
+   - **Option D**: Monthly stipend + commission (e.g., $100/month + 5% commission)
+
+5. **City Manager Dashboard**:
+   - View active listings in their city
+   - Track earnings/commission
+   - Manage moderation (flag inappropriate listings)
+   - View analytics (users, listings, revenue)
+   - Message support
+
+6. **Scaling Workflow**:
+   - Day 1: You manually add 3 cities (done ✅)
+   - Phase 3-5: Core features (listings, payments, reviews)
+   - Phase 6: Launch volunteer system
+   - Month 2+: Volunteers add cities organically
+   - Result: 50+ cities by end of year, 200+ cities by year 2
+
+#### Why This Works:
+- **Eliminates manual work**: Volunteers do expansion
+- **Creates revenue stream**: You take commission on their city
+- **Built-in moderators**: Volunteers moderate their cities
+- **Network effect**: Word spreads locally, more users join
+- **Scales to 1000+ cities without you doing anything**
+
+#### Revenue Math Example:
+- 50 cities with average 500 active users each = 25,000 users
+- Average $5 revenue per user per month = $125,000/month
+- You take 15-30% commission on volunteer earnings = $18,750-$37,500/month
+- Minimal operational cost
+
+---
+
+### Current Status Summary (Jan 26, Evening)
+
+**LIVE & WORKING:**
+- ✅ https://brokeant.com (LIVE with hobo image)
+- ✅ Registration system (FREE currently, will require $2 payment in Phase 4)
+- ✅ Login system (3 test users verified in database)
+- ✅ Code on GitHub with version control
+- ✅ Deployed via git to VPS (66.179.188.184)
+
+**NEXT PRIORITIES (In Order):**
+1. ✅ Phase 3 (Jan 27-28): Listings system - POST items, view all listings
+2. ✅ Phase 4 (Jan 29-Feb 2): Stripe + PayPal integration - START COLLECTING $2/signup
+3. ⏳ Phase 5 (Feb 3-9): Reviews, ratings, admin dashboard
+4. ⏳ Phase 6 (Feb 10+): Volunteer marketplace expansion system
+
+**ACCOUNTS TO CREATE BEFORE PHASE 4:**
+- Stripe account (sales@brokeant.com)
+- PayPal Business account (sales@brokeant.com)
+
+**USER ACCOUNTS IN DATABASE (Verified):**
+1. test@example.com - Melville
+2. newuser@example.com - Yorkton
+3. finaltest@example.com - Melville
+
+---
+
+**Status**: Phase 2 Complete. Ready for Phase 3 tomorrow.  
+**Strategic Focus**: Build core features fast (Jan-Feb), then scale via volunteers (Phase 6+).
+
+---
+
+*Updated by: GitHub Copilot*  
+*Last Updated: January 26, 2026 - 14:45 UTC*  
+*Project: BrokeAnt Marketplace - National Expansion Strategy*
 
 

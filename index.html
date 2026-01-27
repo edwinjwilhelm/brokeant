@@ -139,6 +139,152 @@
       font-weight: bold;
     }
     
+    .user-section {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      display: none;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-section.active {
+      display: flex;
+    }
+    
+    .user-info {
+      flex: 1;
+    }
+    
+    .user-info p {
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    
+    .user-btns {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .user-btns button, .user-btns a {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.3s;
+    }
+    
+    .btn-post-item {
+      background: #ffb34d;
+      color: #402600;
+    }
+    
+    .btn-post-item:hover {
+      background: #ff9d1f;
+    }
+    
+    .btn-my-listings {
+      background: #5cb85c;
+      color: white;
+    }
+    
+    .btn-my-listings:hover {
+      background: #4cae4c;
+    }
+    
+    .btn-logout {
+      background: #d9534f;
+      color: white;
+    }
+    
+    .btn-logout:hover {
+      background: #c9302c;
+    }
+    
+    .listings-section {
+      margin-top: 50px;
+    }
+    
+    .listings-section h2 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 32px;
+    }
+    
+    .listings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    
+    .listing-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .listing-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    
+    .listing-image {
+      width: 100%;
+      height: 180px;
+      background: #f0f0f0;
+      object-fit: cover;
+      display: block;
+    }
+    
+    .listing-body {
+      padding: 15px;
+    }
+    
+    .listing-body h3 {
+      color: #133d60;
+      font-size: 16px;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .listing-price {
+      color: #d9534f;
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    
+    .listing-meta {
+      color: #999;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .listing-seller {
+      color: #666;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .no-listings {
+      text-align: center;
+      color: #ccc;
+      padding: 40px;
+      font-size: 16px;
+    }
+    
     @media (max-width: 600px) {
       .header h1 {
         font-size: 32px;
@@ -151,12 +297,34 @@
       .header {
         flex-direction: column;
       }
+      
+      .user-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .user-btns {
+        width: 100%;
+        flex-wrap: wrap;
+      }
     }
   </style>
 </head>
 <body>
 
 <div class="container">
+  <div class="user-section" id="userSection">
+    <div class="user-info">
+      <p>Welcome, <strong id="userName"></strong> from <strong id="userCity"></strong></p>
+    </div>
+    <div class="user-btns">
+      <a href="/post-listing.html" class="btn-post-item">+ Post Item</a>
+      <a href="/my-listings.html" class="btn-my-listings">My Listings</a>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  
   <div class="header">
     <div class="alfred-section">
       <img src="./hobo_ChatGPT Image Jan 26, 2026, 02_51_11 PM.png" alt="Hobo" class="alfred-image">
@@ -192,10 +360,101 @@
     </a>
   </div>
   
+  <div class="listings-section">
+    <h2>📦 Latest Listings</h2>
+    <div class="listings-grid" id="listingsGrid">
+      <div class="no-listings">Loading listings...</div>
+    </div>
+  </div>
+  
   <div class="footer">
     <p>&copy; 2026 BrokeAnt Marketplace. All rights reserved.</p>
   </div>
 </div>
+
+<script>
+// Check if user is logged in
+function checkAuth() {
+  // This would check session - for now just load listings
+  loadListings();
+  checkUserSession();
+}
+
+// Check user session
+function checkUserSession() {
+  fetch('/backend/api/users.php?action=check_session', {
+    credentials: 'include'
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.logged_in) {
+      document.getElementById('userSection').classList.add('active');
+      document.getElementById('userName').textContent = data.name;
+      document.getElementById('userCity').textContent = data.city;
+    }
+  })
+  .catch(e => console.log('No session'));
+}
+
+// Load all listings
+function loadListings() {
+  fetch('/backend/api/listings.php?action=get_all', {
+    credentials: 'include'
+  })
+  .then(r => r.json())
+  .then(data => {
+    const grid = document.getElementById('listingsGrid');
+    
+    if (data.success && data.listings.length > 0) {
+      grid.innerHTML = '';
+      data.listings.forEach(listing => {
+        grid.innerHTML += `
+          <div class="listing-card" onclick="viewListing(${listing.id})">
+            <img src="${listing.image_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'}" 
+                 alt="${listing.title}" class="listing-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
+            <div class="listing-body">
+              <h3>${listing.title}</h3>
+              ${listing.price ? `<div class="listing-price">$${parseFloat(listing.price).toFixed(2)}</div>` : '<div style="height: 24px;"></div>'}
+              <div class="listing-seller">By <strong>${listing.name}</strong></div>
+              <div class="listing-meta">
+                📍 ${listing.city} • 👁️ ${listing.views} views
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      grid.innerHTML = '<div class="no-listings">No listings available yet. Be the first to post!</div>';
+    }
+  })
+  .catch(e => {
+    document.getElementById('listingsGrid').innerHTML = '<div class="no-listings">Error loading listings</div>';
+  });
+}
+
+// View listing details (future: open modal or detail page)
+function viewListing(id) {
+  alert('Listing detail view coming soon! ID: ' + id);
+}
+
+// Logout
+function logout() {
+  const formData = new FormData();
+  formData.append('action', 'logout');
+  
+  fetch('/backend/api/users.php', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  })
+  .then(() => {
+    window.location.href = '/login.html';
+  });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', checkAuth);
+</script>
 
 </body>
 </html>

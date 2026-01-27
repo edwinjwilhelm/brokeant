@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post a Listing - BrokeAnt Marketplace</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #133d60;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #ffb34d;
+      box-shadow: 0 0 5px rgba(255, 179, 77, 0.3);
+    }
+    
+    button {
+      width: 100%;
+      background: #ffb34d;
+      color: #402600;
+      padding: 14px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      background: #ff9d1f;
+    }
+    
+    .message {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+    
+    .back-link {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      color: #ffb34d;
+      text-decoration: none;
+    }
+    
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    
+    .required {
+      color: #d9534f;
+    }
+    
+    .info {
+      background: #e7f3ff;
+      padding: 12px;
+      border-radius: 6px;
+      color: #004085;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📝 Post Your Item</h1>
+  
+  <div class="info">
+    Your listing will be active for 30 days. After that, it will expire and you can renew it.
+  </div>
+  
+  <form id="listingForm">
+    <div class="form-group">
+      <label for="title">Item Title <span class="required">*</span></label>
+      <input type="text" id="title" name="title" maxlength="150" placeholder="e.g., Mountain Bike, Coffee Table, PS5 Controller" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="description">Description <span class="required">*</span></label>
+      <textarea id="description" name="description" placeholder="Describe your item in detail - condition, features, why you're selling, etc." required></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="price">Price (Optional)</label>
+      <input type="number" id="price" name="price" placeholder="0.00" step="0.01" min="0">
+    </div>
+    
+    <div class="form-group">
+      <label for="category">Category <span class="required">*</span></label>
+      <select id="category" name="category" required>
+        <option value="">-- Select a category --</option>
+        <option value="Electronics">Electronics</option>
+        <option value="Furniture">Furniture</option>
+        <option value="Clothing">Clothing & Accessories</option>
+        <option value="Sports">Sports & Outdoors</option>
+        <option value="Books">Books & Media</option>
+        <option value="Toys">Toys & Games</option>
+        <option value="Home">Home & Garden</option>
+        <option value="Tools">Tools & Equipment</option>
+        <option value="Automotive">Automotive</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="image_url">Image URL (Optional)</label>
+      <input type="url" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+    </div>
+    
+    <div class="form-group">
+      <label for="city">City <span class="required">*</span></label>
+      <select id="city" name="city" required>
+        <option value="">-- Select your city --</option>
+        <option value="Melville">Melville</option>
+        <option value="Yorkton">Yorkton</option>
+        <option value="Regina">Regina</option>
+      </select>
+    </div>
+    
+    <button type="submit">Post Listing</button>
+  </form>
+  
+  <div id="message" class="message"></div>
+  
+  <a href="index.html" class="back-link">← Back to Marketplace</a>
+</div>
+
+<script>
+document.getElementById('listingForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(document.getElementById('listingForm'));
+  formData.append('action', 'create');
+  
+  try {
+    const response = await fetch('/backend/api/listings.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    const messageEl = document.getElementById('message');
+    
+    if (data.success) {
+      messageEl.className = 'message success';
+      messageEl.textContent = 'Listing posted successfully! Redirecting...';
+      setTimeout(() => {
+        window.location.href = '/my-listings.html';
+      }, 2000);
+    } else {
+      messageEl.className = 'message error';
+      messageEl.textContent = 'Error: ' + data.message;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('message').className = 'message error';
+    document.getElementById('message').textContent = 'An error occurred. Please try again.';
+  }
+});
+</script>
+
+</body>
+</html>

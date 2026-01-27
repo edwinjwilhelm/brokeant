@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 require_once '../config/database.php';
 
-$action = $_POST['action'] ?? '';
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 if ($action === 'register') {
     register($conn);
@@ -12,6 +12,8 @@ if ($action === 'register') {
     login($conn);
 } elseif ($action === 'logout') {
     logout();
+} elseif ($action === 'check_session') {
+    check_session();
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 }
@@ -111,5 +113,18 @@ function login($conn) {
 function logout() {
     session_destroy();
     echo json_encode(['success' => true, 'message' => 'Logged out']);
+}
+
+function check_session() {
+    if (isset($_SESSION['user_id'])) {
+        echo json_encode([
+            'logged_in' => true,
+            'user_id' => $_SESSION['user_id'],
+            'name' => $_SESSION['user_name'],
+            'city' => $_SESSION['user_city']
+        ]);
+    } else {
+        echo json_encode(['logged_in' => false]);
+    }
 }
 ?>
