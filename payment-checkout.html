@@ -426,10 +426,15 @@
             loading.style.display = 'block';
             
             try {
-                const { token } = await stripePromise.createToken(cardElement);
+                if (!stripePromise) {
+                    throw new Error('Stripe not initialized');
+                }
                 
-                if (token.error) {
-                    throw new Error(token.error.message);
+                const stripe = await stripePromise;
+                const { token, error } = await stripe.createToken(cardElement);
+                
+                if (error) {
+                    throw new Error(error.message);
                 }
                 
                 const response = await fetch('/backend/api/payment-stripe.php', {
