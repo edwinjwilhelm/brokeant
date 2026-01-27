@@ -40,18 +40,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function handle_stripe_charge() {
     global $mysqli, $stripe_config;
     
-    // Get JSON data from request
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Get data from POST
+    $stripe_token = $_POST['stripe_token'] ?? '';
+    $user_id = intval($_POST['user_id'] ?? 0);
     
     // Validate required fields
-    if (!isset($input['stripe_token']) || !isset($input['user_id'])) {
+    if (empty($stripe_token) || empty($user_id)) {
         http_response_code(400);
         echo json_encode(['error' => 'Missing required fields']);
         return;
     }
     
-    $stripe_token = $input['stripe_token'];
-    $user_id = intval($input['user_id']);
     $amount = $stripe_config['payment']['amount']; // 210 cents = $2.10
     
     try {
