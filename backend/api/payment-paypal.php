@@ -8,8 +8,23 @@ require_once '../middleware/auth.php';
 
 $paypal_config = require_once '../config/paypal.php';
 
+// Cache JSON body (read once)
+$rawBody = file_get_contents('php://input');
+$jsonBody = [];
+if ($rawBody !== false && $rawBody !== '') {
+    $decoded = json_decode($rawBody, true);
+    if (is_array($decoded)) {
+        $jsonBody = $decoded;
+    }
+}
+
+function getJsonBody() {
+    global $jsonBody;
+    return $jsonBody;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = isset($_POST['action']) ? $_POST['action'] : '';
+    $action = $_POST['action'] ?? ($jsonBody['action'] ?? '');
     
     if ($action === 'create_order') {
         create_paypal_order();
@@ -57,8 +72,11 @@ function get_paypal_access_token() {
 function create_paypal_order() {
     global $paypal_config;
     
-    $input = json_decode(file_get_contents('php://input'), true);
-    $user_id = intval($input['user_id']);
+    $input = getJsonBody();
+    if (!is_array($input) || empty($input)) {
+        $input = $_POST;
+    }
+    $user_id = intval($input['user_id'] ?? 0);
     $amount = $paypal_config['payment']['amount'];
     $currency = $paypal_config['payment']['currency'];
     
@@ -77,8 +95,8 @@ function create_paypal_order() {
                 'custom_id' => (string)$user_id
             ]],
             'application_context' => [
-                'return_url' => 'https://brokeant.com/payment-checkout.html?action=confirm',
-                'cancel_url' => 'https://brokeant.com/payment-checkout.html?action=cancel',
+                'return_url' => 'https://www.brokeant.com/payment-checkout.html?action=confirm',
+                'cancel_url' => 'https://www.brokeant.com/payment-checkout.html?action=cancel',
                 'brand_name' => 'BrokeAnt Marketplace',
                 'locale' => 'en-CA'
             ]
@@ -118,9 +136,12 @@ function create_paypal_order() {
 function capture_paypal_order() {
     global $mysqli, $paypal_config;
     
-    $input = json_decode(file_get_contents('php://input'), true);
-    $order_id = $input['order_id'];
-    $user_id = intval($input['user_id']);
+    $input = getJsonBody();
+    if (!is_array($input) || empty($input)) {
+        $input = $_POST;
+    }
+    $order_id = $input['order_id'] ?? '';
+    $user_id = intval($input['user_id'] ?? 0);
     $amount = $paypal_config['payment']['amount'];
     
     try {
@@ -195,7 +216,7 @@ function capture_paypal_order() {
             VALUES (?, ?, ?, ?, ?, ?)
         ");
         
-        $stmt->bind_param('idsss', $user_id, $amount, 'cad', 'paypal', $order_id, $status);
+        $stmt->bind_param('idssss', $user_id, $amount, 'cad', 'paypal', $order_id, $status);
         $stmt->execute();
         
         // Update user payment status
