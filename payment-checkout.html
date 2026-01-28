@@ -283,37 +283,42 @@
         </div>
         
         <div class="note">
-            💡 This one-time $2.10 fee activates your account and gives you listing credits.
-        </div>
+    💡 This one-time $2.10 fee activates your account and gives you listing credits.<br>
+    ✅ PayPal also accepts Visa/Mastercard without a PayPal account.
+</div>
+
         
         <div class="payment-methods">
             <div class="method-title">Choose Payment Method</div>
             
             <div class="method-tabs">
-                <div class="method-tab active" onclick="switchMethod('stripe')">
-                    💳 Card
+                <div class="method-tab disabled" style="opacity: 0.5; cursor: not-allowed;" title="Coming soon">
+                    💳 Card (Coming Soon)
                 </div>
-                <div class="method-tab" onclick="switchMethod('paypal')">
+                <div class="method-tab active" onclick="switchMethod('paypal')">
                     🅿️ PayPal
                 </div>
             </div>
             
-            <!-- Stripe Payment -->
-            <div class="method-content stripe-form active">
+            <!-- Stripe Payment - DISABLED -->
+            <div class="method-content stripe-form" style="display: none;">
+                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; text-align: center; color: #856404; margin-bottom: 15px;">
+                    ⏳ <strong>Stripe payment is coming soon!</strong> Please use PayPal for now.
+                </div>
                 <form id="stripeForm" onsubmit="handleStripePayment(event)">
                     <div class="form-group">
                         <label>Card Details</label>
                         <div id="stripe-element"></div>
                     </div>
-                    <button type="submit" class="button btn-primary" id="stripeButton">
-                        Pay $2.10 with Card
+                    <button type="submit" class="button btn-primary" id="stripeButton" disabled>
+                        Pay $2.10 with Card (Not Available)
                     </button>
                     <div class="loading" id="stripeLoading">Processing payment...</div>
                 </form>
             </div>
             
-            <!-- PayPal Payment -->
-            <div class="method-content paypal-form">
+            <!-- PayPal Payment - ACTIVE -->
+            <div class="method-content paypal-form active">
                 <form id="paypalForm" onsubmit="handlePayPalPayment(event)">
                     <button type="submit" class="button btn-primary" id="paypalButton">
                         Pay $2.10 with PayPal
@@ -344,16 +349,36 @@
         
         // Initialize Stripe
         async function initializeStripe() {
+            // Stripe initialization disabled - coming soon
+            console.log('Stripe payment is disabled. PayPal is the active payment method.');
+        }
+        
+        async function initializeStripeOld_DISABLED() {
             try {
+                // Check if Stripe.js loaded
+                if (typeof Stripe === 'undefined') {
+                    throw new Error('Stripe.js library failed to load from CDN');
+                }
+                
                 const response = await fetch('/backend/api/payment-stripe.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'action=get_publishable_key'
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+                
                 const data = await response.json();
+                
+                if (!data.publishable_key) {
+                    throw new Error('No publishable key in response: ' + JSON.stringify(data));
+                }
+                
                 stripePromise = Stripe(data.publishable_key);
-                elements = stripePromise.elements();
+                const stripe = await stripePromise;
+                elements = stripe.elements();
                 cardElement = elements.create('card');
                 cardElement.mount('#stripe-element');
                 
@@ -398,6 +423,12 @@
         
         // Switch payment method
         function switchMethod(method) {
+            // Block switching to Stripe (not enabled yet)
+            if (method === 'stripe') {
+                showError('Stripe payment is coming soon! Please use PayPal.');
+                return;
+            }
+            
             document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.method-content').forEach(content => content.classList.remove('active'));
             
@@ -442,6 +473,10 @@
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `action=charge&stripe_token=${token.id}&user_id=${userId}`
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
                 
                 const data = await response.json();
                 
