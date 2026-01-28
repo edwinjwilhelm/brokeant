@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - BrokeAnt Marketplace</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #133d60;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: bold;
+    }
+    
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #ffb34d;
+      box-shadow: 0 0 5px rgba(255, 179, 77, 0.3);
+    }
+    
+    button {
+      width: 100%;
+      background: #ffb34d;
+      color: #402600;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #ff9d1f;
+    }
+    
+    .message {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+    
+    .register-link {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+    }
+    
+    .register-link a {
+      color: #ffb34d;
+      text-decoration: none;
+    }
+    
+    .register-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Log In</h1>
+  
+  <form id="loginForm">
+    <div class="form-group">
+      <label for="email">Email *</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="password">Password *</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    
+    <button type="submit">Log In</button>
+  </form>
+  
+  <div id="message" class="message"></div>
+  
+  <div class="register-link">
+    Don't have an account? <a href="register.html">Sign up here</a>
+  </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(document.getElementById('loginForm'));
+  formData.append('action', 'login');
+  
+  try {
+    const response = await fetch('/backend/api/users.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    const messageEl = document.getElementById('message');
+    
+    if (data.success) {
+      messageEl.className = 'message success';
+      messageEl.textContent = 'Login successful! Redirecting...';
+      setTimeout(() => {
+        window.location.href = '/index.html';
+      }, 2000);
+    } else {
+      messageEl.className = 'message error';
+      messageEl.textContent = 'Error: ' + data.message;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('message').className = 'message error';
+    document.getElementById('message').textContent = 'An error occurred. Please try again.';
+  }
+});
+</script>
+
+</body>
+</html>

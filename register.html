@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register - BrokeAnt Marketplace</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #133d60;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: bold;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #ffb34d;
+      box-shadow: 0 0 5px rgba(255, 179, 77, 0.3);
+    }
+    
+    button {
+      width: 100%;
+      background: #ffb34d;
+      color: #402600;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #ff9d1f;
+    }
+    
+    .message {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+      display: none;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+    
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+    }
+    
+    .login-link a {
+      color: #ffb34d;
+      text-decoration: none;
+    }
+    
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Create Account</h1>
+  
+  <form id="registerForm">
+    <div class="form-group">
+      <label for="email">Email *</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="password">Password *</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="name">Full Name *</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="city">City *</label>
+      <select id="city" name="city" required>
+        <option value="">Select your city</option>
+        <option value="Melville">Melville</option>
+        <option value="Yorkton">Yorkton</option>
+        <option value="Regina">Regina</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="phone">Phone (Optional)</label>
+      <input type="tel" id="phone" name="phone">
+    </div>
+    
+    <button type="submit">Sign Up</button>
+  </form>
+  
+  <div id="message" class="message"></div>
+  
+  <div class="login-link">
+    Already have an account? <a href="login.html">Log in here</a>
+  </div>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(document.getElementById('registerForm'));
+  formData.append('action', 'register');
+  
+  try {
+    const response = await fetch('/backend/api/users.php', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    const messageEl = document.getElementById('message');
+    
+    if (data.success) {
+      messageEl.className = 'message success';
+      messageEl.textContent = data.message + ' Redirecting to payment...';
+      setTimeout(() => {
+        // Redirect to payment checkout with user ID
+        window.location.href = '/payment-checkout.html?user_id=' + data.user_id;
+      }, 2000);
+    } else {
+      messageEl.className = 'message error';
+      messageEl.textContent = 'Error: ' + data.message;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('message').className = 'message error';
+    document.getElementById('message').textContent = 'Error: ' + error.message;
+  }
+});
+</script>
+
+</body>
+</html>
