@@ -1,0 +1,29 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /var/www/brokeant
+            if [ -f .env ]; then cp .env /tmp/brokeant.env; fi
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+            if [ -f /tmp/brokeant.env ]; then mv /tmp/brokeant.env .env; fi
+            if [ -f .env ]; then chown deploy:deploy .env; fi
+            git update-index --skip-worktree .env || true
+            sudo systemctl reload nginx
+            sudo systemctl reload php8.3-fpm || true
