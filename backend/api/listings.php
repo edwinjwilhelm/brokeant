@@ -12,6 +12,8 @@ if ($action === 'create') {
     create_listing($conn);
 } elseif ($action === 'get_all') {
     get_all_listings($conn);
+} elseif ($action === 'get_public_images') {
+    get_public_images($conn);
 } elseif ($action === 'get_user_listings') {
     get_user_listings($conn);
 } elseif ($action === 'get_single') {
@@ -30,6 +32,11 @@ function create_listing($conn) {
         echo json_encode(['success' => false, 'message' => 'Must be logged in']);
         return;
     }
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required. Please complete your payment first.', 'redirect' => '/payment-checkout.html']);
+        return;
+    }
     
     $user_id = get_user_id();
     $title = $conn->real_escape_string($_POST['title'] ?? '');
@@ -37,7 +44,7 @@ function create_listing($conn) {
     $price = $_POST['price'] ?? NULL;
     $category = $conn->real_escape_string($_POST['category'] ?? '');
     $image_url = $conn->real_escape_string($_POST['image_url'] ?? '');
-    $city = $conn->real_escape_string($_POST['city'] ?? '');
+    $city = $conn->real_escape_string(get_user_city() ?? '');
     
     // Validate
     if (empty($title) || empty($description) || empty($city)) {
@@ -76,29 +83,46 @@ function create_listing($conn) {
     $stmt->close();
 }
 
-// GET all active listings (for homepage)
+// GET all active listings for the logged-in user's city (paid users only)
 function get_all_listings($conn) {
-    $city = $conn->real_escape_string($_GET['city'] ?? '');
-    $category = $conn->real_escape_string($_GET['category'] ?? '');
-    
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
+        return;
+    }
+
+    $city = get_user_city();
+    if (!$city) {
+        echo json_encode(['success' => false, 'message' => 'City not found']);
+        return;
+    }
+
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
                    l.image_url, l.city, l.posted_date, u.name, u.reputation_score
             FROM listings l
             JOIN users u ON l.user_id = u.id
-            WHERE l.status = 'active'";
-    
-    if (!empty($city)) {
-        $sql .= " AND l.city = '$city'";
+            WHERE l.status = 'active' AND l.city = ?
+            ORDER BY l.posted_date DESC LIMIT 100";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $city);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $listings = [];
+    while ($row = $result->fetch_assoc()) {
+        $listings[] = $row;
     }
-    
-    if (!empty($category)) {
-        $sql .= " AND l.category = '$category'";
-    }
-    
-    $sql .= " ORDER BY l.posted_date DESC LIMIT 100";
-    
+
+    echo json_encode(['success' => true, 'listings' => $listings]);
+    $stmt->close();
+}
+
+// GET public images (all cities, no details)
+function get_public_images($conn) {
+    $sql = "SELECT id, image_url FROM listings WHERE status = 'active' AND image_url <> '' ORDER BY posted_date DESC LIMIT 100";
     $result = $conn->query($sql);
-    
+
     if ($result) {
         $listings = [];
         while ($row = $result->fetch_assoc()) {
@@ -114,6 +138,11 @@ function get_all_listings($conn) {
 function get_user_listings($conn) {
     if (!is_logged_in()) {
         echo json_encode(['success' => false, 'message' => 'Must be logged in']);
+        return;
+    }
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
         return;
     }
     
@@ -140,6 +169,12 @@ function get_user_listings($conn) {
 
 // GET single listing details
 function get_single_listing($conn) {
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
+        return;
+    }
+
     $listing_id = intval($_GET['id'] ?? 0);
     
     if ($listing_id <= 0) {
@@ -160,6 +195,12 @@ function get_single_listing($conn) {
     
     if ($result->num_rows > 0) {
         $listing = $result->fetch_assoc();
+        $user_city = get_user_city();
+        if ($user_city && $listing['city'] !== $user_city) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            $stmt->close();
+            return;
+        }
         // Increment views
         $update_sql = "UPDATE listings SET views = views + 1 WHERE id = ?";
         $update_stmt = $conn->prepare($update_sql);
@@ -179,6 +220,11 @@ function get_single_listing($conn) {
 function update_listing($conn) {
     if (!is_logged_in()) {
         echo json_encode(['success' => false, 'message' => 'Must be logged in']);
+        return;
+    }
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
         return;
     }
     
@@ -224,6 +270,11 @@ function update_listing($conn) {
 function delete_listing($conn) {
     if (!is_logged_in()) {
         echo json_encode(['success' => false, 'message' => 'Must be logged in']);
+        return;
+    }
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
         return;
     }
     

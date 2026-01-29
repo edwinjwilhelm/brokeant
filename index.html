@@ -423,9 +423,9 @@ function checkUserSession() {
   .catch(e => console.log('No session'));
 }
 
-// Load all listings
+// Load public images (no details)
 function loadListings() {
-  fetch('/backend/api/listings.php?action=get_all', {
+  fetch('/backend/api/listings.php?action=get_public_images', {
     credentials: 'include'
   })
   .then(r => r.json())
@@ -436,16 +436,11 @@ function loadListings() {
       grid.innerHTML = '';
       data.listings.forEach(listing => {
         grid.innerHTML += `
-          <div class="listing-card" onclick="viewListing(${listing.id})">
+          <div class="listing-card">
             <img src="${listing.image_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'}" 
-                 alt="${listing.title}" class="listing-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
+                 alt="Listing image" class="listing-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
             <div class="listing-body">
-              <h3>${listing.title}</h3>
-              ${listing.price ? `<div class="listing-price">$${parseFloat(listing.price).toFixed(2)}</div>` : '<div style="height: 24px;"></div>'}
-              <div class="listing-seller">By <strong>${listing.name}</strong></div>
-              <div class="listing-meta">
-                📍 ${listing.city} • 👁️ ${listing.views} views
-              </div>
+              <div class="listing-meta">Sign in to view full details</div>
             </div>
           </div>
         `;
