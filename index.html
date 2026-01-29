@@ -375,9 +375,37 @@
 <script>
 // Check if user is logged in
 function checkAuth() {
-  // This would check session - for now just load listings
+  // Home should always be logged out
+  autoLogout();
   loadListings();
-  checkUserSession();
+}
+
+// Auto-logout on homepage to avoid stale sessions
+function autoLogout() {
+  try {
+    localStorage.removeItem('brokeant_current_user');
+  } catch (e) {}
+
+  const formData = new FormData();
+  formData.append('action', 'logout');
+
+  fetch('/backend/api/users.php', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  })
+  .then(() => {
+    const userSection = document.getElementById('userSection');
+    if (userSection) {
+      userSection.classList.remove('active');
+    }
+  })
+  .catch(() => {
+    const userSection = document.getElementById('userSection');
+    if (userSection) {
+      userSection.classList.remove('active');
+    }
+  });
 }
 
 // Check user session
