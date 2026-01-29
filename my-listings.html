@@ -213,6 +213,66 @@
     .back-link:hover {
       text-decoration: underline;
     }
+  
+    .city-access {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .city-access h2 {
+      color: #133d60;
+      margin-bottom: 10px;
+    }
+
+    .city-access-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .city-chip {
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .chip-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .chip-requested {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .city-access-form {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .city-access-form input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+
+    .city-access-form button {
+      background: #5cb85c;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
@@ -220,6 +280,17 @@
 <div class="container">
   <a href="index.html" class="back-link">← Back to Marketplace</a>
   
+  
+  <div class="city-access">
+    <h2>City Access</h2>
+    <div id="cityAccessList" class="city-access-list">Loading city access...</div>
+    <div class="city-access-form">
+      <input type="text" id="cityRequest" placeholder="Add a city (max 6)">
+      <button onclick="requestCityAccess()">Request City</button>
+    </div>
+    <small>Requests require admin approval.</small>
+  </div>
+
   <div class="header">
     <h1>📋 My Listings</h1>
     <div>
@@ -348,6 +419,57 @@ function logout() {
 
 // Initialize
 checkAuth();
+
+async function loadCityAccess() {
+  try {
+    const res = await fetch('/backend/api/users.php?action=get_city_access', { credentials: 'include' });
+    const data = await res.json();
+
+    const container = document.getElementById('cityAccessList');
+    if (!container) return;
+
+    if (!data.success) {
+      container.textContent = 'Unable to load city access';
+      return;
+    }
+
+    const approved = data.approved || [];
+    const requested = data.requested || [];
+    const chips = [];
+
+    approved.forEach(city => chips.push(`<span class="city-chip chip-approved">${city} (approved)</span>`));
+    requested.forEach(city => chips.push(`<span class="city-chip chip-requested">${city} (requested)</span>`));
+
+    container.innerHTML = chips.length ? chips.join('') : 'No city access yet.';
+  } catch (e) {
+    const container = document.getElementById('cityAccessList');
+    if (container) container.textContent = 'Unable to load city access';
+  }
+}
+
+async function requestCityAccess() {
+  const city = document.getElementById('cityRequest').value.trim();
+  if (!city) return;
+
+  const formData = new FormData();
+  formData.append('action', 'request_city_access');
+  formData.append('city', city);
+
+  const response = await fetch('/backend/api/users.php', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  });
+  const data = await response.json();
+
+  if (!data.success) {
+    alert(data.message || 'Request failed');
+  }
+
+  document.getElementById('cityRequest').value = '';
+  loadCityAccess();
+}
+
 </script>
 
 </body>

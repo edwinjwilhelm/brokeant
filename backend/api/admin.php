@@ -41,6 +41,14 @@ if ($action === 'admin_login') {
     update_user($conn);
 } elseif ($action === 'mark_paid' && verifyToken($token)) {
     mark_paid($conn);
+} elseif ($action === 'get_city_access' && verifyToken($token)) {
+    get_city_access_admin($conn);
+} elseif ($action === 'approve_city' && verifyToken($token)) {
+    approve_city($conn);
+} elseif ($action === 'revoke_city' && verifyToken($token)) {
+    revoke_city($conn);
+} elseif ($action === 'add_city_access' && verifyToken($token)) {
+    add_city_access($conn);
 } elseif ($action === 'delete_user' && verifyToken($token)) {
     delete_user($conn);
 } elseif ($action === 'get_listings' && verifyToken($token)) {
@@ -265,10 +273,33 @@ function mark_paid($conn) {
     $stmt->bind_param("ssi", $payment_date, $transaction_id, $user_id);
 
     if ($stmt->execute()) {
+        ensure_city_access($conn, $user_id);
         echo json_encode(['success' => true, 'message' => 'Marked as paid']);
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
     }
+}
+
+function ensure_city_access($conn, $user_id) {
+    $stmt = $conn->prepare("SELECT city FROM users WHERE id = ?");
+    if (!$stmt) {
+        return;
+    }
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $city = $result->fetch_assoc()['city'];
+        if ($city) {
+            $ins = $conn->prepare("INSERT IGNORE INTO user_city_access (user_id, city, status) VALUES (?, ?, 'approved')");
+            if ($ins) {
+                $ins->bind_param("is", $user_id, $city);
+                $ins->execute();
+                $ins->close();
+            }
+        }
+    }
+    $stmt->close();
 }
 
 // Delete user
@@ -340,5 +371,91 @@ function get_payments($conn) {
     }
     
     echo json_encode(['success' => true, 'payments' => $payments]);
+}
+
+// City access admin endpoints
+function get_city_access_admin($conn) {
+    $result = $conn->query("
+        SELECT uca.id, uca.user_id, u.email, u.name, u.city as signup_city, uca.city, uca.status, uca.created_at
+        FROM user_city_access uca
+        JOIN users u ON uca.user_id = u.id
+        ORDER BY uca.created_at DESC
+    ");
+
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+
+    echo json_encode(['success' => true, 'rows' => $rows]);
+}
+
+function approve_city($conn) {
+    $json = getJsonBody();
+    $id = intval($json['id'] ?? 0);
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+
+    $stmt = $conn->prepare("UPDATE user_city_access SET status = 'approved' WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Approved']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+}
+
+function revoke_city($conn) {
+    $json = getJsonBody();
+    $id = intval($json['id'] ?? 0);
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM user_city_access WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Revoked']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+}
+
+function add_city_access($conn) {
+    $json = getJsonBody();
+    $user_id = intval($json['user_id'] ?? 0);
+    $city = $conn->real_escape_string($json['city'] ?? '');
+
+    if ($user_id <= 0 || empty($city)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid user_id or city']);
+        return;
+    }
+
+    $count_stmt = $conn->prepare("SELECT COUNT(*) as count FROM user_city_access WHERE user_id = ?");
+    $count_stmt->bind_param("i", $user_id);
+    $count_stmt->execute();
+    $count = $count_stmt->get_result()->fetch_assoc()['count'] ?? 0;
+    $count_stmt->close();
+
+    if ($count >= 6) {
+        echo json_encode(['success' => false, 'error' => 'City limit reached (max 6)']);
+        return;
+    }
+
+    $stmt = $conn->prepare("INSERT IGNORE INTO user_city_access (user_id, city, status) VALUES (?, ?, 'approved')");
+    $stmt->bind_param("is", $user_id, $city);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'City added']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
 }
 ?>

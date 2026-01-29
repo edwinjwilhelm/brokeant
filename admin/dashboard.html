@@ -1,275 +1,806 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - BrokeAnt</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-        }
-        
-        .navbar {
-            background: white;
-            border-bottom: 1px solid #ddd;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .navbar h1 {
-            font-size: 20px;
-            color: #667eea;
-        }
-        
-        .navbar button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .stat-card h3 {
-            font-size: 28px;
-            color: #667eea;
-            margin-bottom: 5px;
-        }
-        
-        .stat-card p {
-            color: #999;
-            font-size: 12px;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #ddd;
-        }
-        
-        .tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 14px;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-        
-        .content {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th {
-            background: #f8f9fa;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #ddd;
-            font-size: 13px;
-        }
-        
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 13px;
-        }
-        
-        tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .action-btn {
-            padding: 6px 12px;
-            margin: 0 3px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .btn-edit {
-            background: #007bff;
-            color: white;
-        }
-        
-        .btn-delete {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .btn-verify {
-            background: #28a745;
-            color: white;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .badge-verified {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .badge-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .badge-failed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 90%;
-        }
-        
-        .modal-content h3 {
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            font-size: 13px;
-        }
-        
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            justify-content: flex-end;
-        }
-        
-        .modal-buttons button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        
-        .btn-save {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-cancel {
-            background: #ddd;
-            color: #333;
-        }
-        
-        
-        .user-controls {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0 15px;
-        }
-        .user-controls input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 13px;
-        }
+<!DOCTYPE html>
+
+
+<html lang="en">
+
+
+<head>
+
+
+    <meta charset="UTF-8">
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <title>Admin Dashboard - BrokeAnt</title>
+
+
+    <style>
+
+
+        * {
+
+
+            margin: 0;
+
+
+            padding: 0;
+
+
+            box-sizing: border-box;
+
+
+        }
+
+
+        
+
+
+        body {
+
+
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+
+            background: #f5f5f5;
+
+
+            color: #333;
+
+
+        }
+
+
+        
+
+
+        .navbar {
+
+
+            background: white;
+
+
+            border-bottom: 1px solid #ddd;
+
+
+            padding: 15px 20px;
+
+
+            display: flex;
+
+
+            justify-content: space-between;
+
+
+            align-items: center;
+
+
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+
+        }
+
+
+        
+
+
+        .navbar h1 {
+
+
+            font-size: 20px;
+
+
+            color: #667eea;
+
+
+        }
+
+
+        
+
+
+        .navbar button {
+
+
+            background: #dc3545;
+
+
+            color: white;
+
+
+            border: none;
+
+
+            padding: 8px 15px;
+
+
+            border-radius: 4px;
+
+
+            cursor: pointer;
+
+
+            font-size: 13px;
+
+
+        }
+
+
+        
+
+
+        .container {
+
+
+            max-width: 1400px;
+
+
+            margin: 0 auto;
+
+
+            padding: 20px;
+
+
+        }
+
+
+        
+
+
+        .stats {
+
+
+            display: grid;
+
+
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+
+            gap: 15px;
+
+
+            margin-bottom: 30px;
+
+
+        }
+
+
+        
+
+
+        .stat-card {
+
+
+            background: white;
+
+
+            padding: 20px;
+
+
+            border-radius: 8px;
+
+
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+
+            text-align: center;
+
+
+        }
+
+
+        
+
+
+        .stat-card h3 {
+
+
+            font-size: 28px;
+
+
+            color: #667eea;
+
+
+            margin-bottom: 5px;
+
+
+        }
+
+
+        
+
+
+        .stat-card p {
+
+
+            color: #999;
+
+
+            font-size: 12px;
+
+
+        }
+
+
+        
+
+
+        .tabs {
+
+
+            display: flex;
+
+
+            gap: 10px;
+
+
+            margin-bottom: 20px;
+
+
+            border-bottom: 2px solid #ddd;
+
+
+        }
+
+
+        
+
+
+        .tab {
+
+
+            padding: 12px 20px;
+
+
+            cursor: pointer;
+
+
+            border: none;
+
+
+            background: none;
+
+
+            font-size: 14px;
+
+
+            color: #666;
+
+
+            border-bottom: 3px solid transparent;
+
+
+            transition: all 0.3s;
+
+
+        }
+
+
+        
+
+
+        .tab.active {
+
+
+            color: #667eea;
+
+
+            border-bottom-color: #667eea;
+
+
+        }
+
+
+        
+
+
+        .content {
+
+
+            background: white;
+
+
+            border-radius: 8px;
+
+
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+
+            padding: 20px;
+
+
+        }
+
+
+        
+
+
+        .tab-content {
+
+
+            display: none;
+
+
+        }
+
+
+        
+
+
+        .tab-content.active {
+
+
+            display: block;
+
+
+        }
+
+
+        
+
+
+        table {
+
+
+            width: 100%;
+
+
+            border-collapse: collapse;
+
+
+        }
+
+
+        
+
+
+        th {
+
+
+            background: #f8f9fa;
+
+
+            padding: 12px;
+
+
+            text-align: left;
+
+
+            font-weight: 600;
+
+
+            border-bottom: 2px solid #ddd;
+
+
+            font-size: 13px;
+
+
+        }
+
+
+        
+
+
+        td {
+
+
+            padding: 12px;
+
+
+            border-bottom: 1px solid #eee;
+
+
+            font-size: 13px;
+
+
+        }
+
+
+        
+
+
+        tr:hover {
+
+
+            background: #f8f9fa;
+
+
+        }
+
+
+        
+
+
+        .action-btn {
+
+
+            padding: 6px 12px;
+
+
+            margin: 0 3px;
+
+
+            border: none;
+
+
+            border-radius: 4px;
+
+
+            cursor: pointer;
+
+
+            font-size: 12px;
+
+
+        }
+
+
+        
+
+
+        .btn-edit {
+
+
+            background: #007bff;
+
+
+            color: white;
+
+
+        }
+
+
+        
+
+
+        .btn-delete {
+
+
+            background: #dc3545;
+
+
+            color: white;
+
+
+        }
+
+
+        
+
+
+        .btn-verify {
+
+
+            background: #28a745;
+
+
+            color: white;
+
+
+        }
+
+
+        
+
+
+        .badge {
+
+
+            display: inline-block;
+
+
+            padding: 4px 8px;
+
+
+            border-radius: 12px;
+
+
+            font-size: 11px;
+
+
+            font-weight: 600;
+
+
+        }
+
+
+        
+
+
+        .badge-verified {
+
+
+            background: #d4edda;
+
+
+            color: #155724;
+
+
+        }
+
+
+        
+
+
+        .badge-pending {
+
+
+            background: #fff3cd;
+
+
+            color: #856404;
+
+
+        }
+
+
+        
+
+
+        .badge-failed {
+
+
+            background: #f8d7da;
+
+
+            color: #721c24;
+
+
+        }
+
+
+        
+
+
+        .modal {
+
+
+            display: none;
+
+
+            position: fixed;
+
+
+            top: 0;
+
+
+            left: 0;
+
+
+            width: 100%;
+
+
+            height: 100%;
+
+
+            background: rgba(0,0,0,0.5);
+
+
+            z-index: 1000;
+
+
+            justify-content: center;
+
+
+            align-items: center;
+
+
+        }
+
+
+        
+
+
+        .modal.active {
+
+
+            display: flex;
+
+
+        }
+
+
+        
+
+
+        .modal-content {
+
+
+            background: white;
+
+
+            padding: 30px;
+
+
+            border-radius: 8px;
+
+
+            max-width: 500px;
+
+
+            width: 90%;
+
+
+        }
+
+
+        
+
+
+        .modal-content h3 {
+
+
+            margin-bottom: 20px;
+
+
+        }
+
+
+        
+
+
+        .form-group {
+
+
+            margin-bottom: 15px;
+
+
+        }
+
+
+        
+
+
+        .form-group label {
+
+
+            display: block;
+
+
+            margin-bottom: 5px;
+
+
+            font-weight: 500;
+
+
+            font-size: 13px;
+
+
+        }
+
+
+        
+
+
+        .form-group input,
+
+
+        .form-group select {
+
+
+            width: 100%;
+
+
+            padding: 8px;
+
+
+            border: 1px solid #ddd;
+
+
+            border-radius: 4px;
+
+
+            font-size: 13px;
+
+
+        }
+
+
+        
+
+
+        .modal-buttons {
+
+
+            display: flex;
+
+
+            gap: 10px;
+
+
+            margin-top: 20px;
+
+
+            justify-content: flex-end;
+
+
+        }
+
+
+        
+
+
+        .modal-buttons button {
+
+
+            padding: 8px 15px;
+
+
+            border: none;
+
+
+            border-radius: 4px;
+
+
+            cursor: pointer;
+
+
+            font-size: 13px;
+
+
+        }
+
+
+        
+
+
+        .btn-save {
+
+
+            background: #667eea;
+
+
+            color: white;
+
+
+        }
+
+
+        
+
+
+        .btn-cancel {
+
+
+            background: #ddd;
+
+
+            color: #333;
+
+
+        }
+
+
+        
+
+
+        
+
+        .user-controls {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin: 10px 0 15px;
+
+        }
+
+        .user-controls input {
+
+            flex: 1;
+
+            padding: 8px;
+
+            border: 1px solid #ddd;
+
+            border-radius: 4px;
+
+            font-size: 13px;
+
+        }
+
         .user-controls button {
             padding: 8px 12px;
             border: none;
@@ -290,62 +821,185 @@
             margin-top: 12px;
             justify-content: flex-end;
         }
-        .pagination button {
-            padding: 6px 10px;
-            border: 1px solid #ddd;
-            background: white;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .pagination button.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .loading {
-            text-align: center;
-            color: #667eea;
-            padding: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <h1>🏠 Admin Dashboard</h1>
-        <button onclick="logout()">Logout</button>
-    </div>
-    
-    <div class="container">
-        <div class="stats" id="statsContainer">
-            <div class="stat-card">
-                <h3 id="totalUsers">0</h3>
-                <p>Total Users</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="paidUsers">0</h3>
-                <p>Paid Users</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="totalListings">0</h3>
-                <p>Total Listings</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="totalRevenue">$0.00</h3>
-                <p>Total Revenue</p>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('users')">👥 Users</button>
-            <button class="tab" onclick="switchTab('listings')">📋 Listings</button>
-            <button class="tab" onclick="switchTab('payments')">💰 Payments</button>
-        </div>
-        
-        <div class="content">
-            <!-- Users Tab -->
-                        <div id="users" class="tab-content active">
-                <h2>User Management</h2>
+        .pagination button {
+
+            padding: 6px 10px;
+
+            border: 1px solid #ddd;
+
+            background: white;
+
+            cursor: pointer;
+
+            font-size: 12px;
+
+        }
+
+        .pagination button.active {
+
+            background: #667eea;
+
+            color: white;
+
+            border-color: #667eea;
+
+        }
+
+
+
+        .loading {
+
+
+            text-align: center;
+
+
+            color: #667eea;
+
+
+            padding: 20px;
+
+
+        }
+
+
+    
+        .city-tools {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 15px;
+            flex-wrap: wrap;
+        }
+
+        .city-tools input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .badge-requested {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+    </style>
+
+
+</head>
+
+
+<body>
+
+
+    <div class="navbar">
+
+
+        <h1>🏠 Admin Dashboard</h1>
+
+
+        <button onclick="logout()">Logout</button>
+
+
+    </div>
+
+
+    
+
+
+    <div class="container">
+
+
+        <div class="stats" id="statsContainer">
+
+
+            <div class="stat-card">
+
+
+                <h3 id="totalUsers">0</h3>
+
+
+                <p>Total Users</p>
+
+
+            </div>
+
+
+            <div class="stat-card">
+
+
+                <h3 id="paidUsers">0</h3>
+
+
+                <p>Paid Users</p>
+
+
+            </div>
+
+
+            <div class="stat-card">
+
+
+                <h3 id="totalListings">0</h3>
+
+
+                <p>Total Listings</p>
+
+
+            </div>
+
+
+            <div class="stat-card">
+
+
+                <h3 id="totalRevenue">$0.00</h3>
+
+
+                <p>Total Revenue</p>
+
+
+            </div>
+
+
+        </div>
+
+
+        
+
+
+        <div class="tabs">
+
+
+            <button class="tab active" onclick="switchTab('users')">👥 Users</button>
+
+
+            <button class="tab" onclick="switchTab('listings')">📋 Listings</button>
+
+
+            <button class="tab" onclick="switchTab('payments')">💰 Payments</button>
+            <button class=\"tab\" onclick=\"switchTab('cities')\">?? City Access</button>
+
+
+        </div>
+
+
+        
+
+
+        <div class="content">
+
+
+            <!-- Users Tab -->
+
+
+                        <div id="users" class="tab-content active">
+
+                <h2>User Management</h2>
+
                 <div class="user-controls">
                     <input type="text" id="userSearch" placeholder="Search email, name, city">
                     <button onclick="applyUserSearch()">Search</button>
@@ -355,360 +1009,1148 @@
                 <div id="usersTable" class="loading">Loading users...</div>
                 <div class="pagination" id="usersPagination"></div>
             </div>
-
-            
-            <!-- Listings Tab -->
-            <div id="listings" class="tab-content">
-                <h2>Listings Management</h2>
-                <div id="listingsTable" class="loading">Loading listings...</div>
-            </div>
-            
-            <!-- Payments Tab -->
-            <div id="payments" class="tab-content">
-                <h2>Payments</h2>
-                <div id="paymentsTable" class="loading">Loading payments...</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Edit User Modal -->
-    <div id="editUserModal" class="modal">
-        <div class="modal-content">
-            <h3>Edit User</h3>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="editEmail" readonly>
-            </div>
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="editName">
-            </div>
-            <div class="form-group">
-                <label>City</label>
-                <input type="text" id="editCity">
-            </div>
-            <div class="form-group">
-                <label>Payment Status</label>
-                <select id="editPaymentStatus">
-                    <option value="pending">Pending</option>
-                    <option value="verified">Verified</option>
-                    <option value="failed">Failed</option>
-                </select>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="closeModal('editUserModal')">Cancel</button>
-                <button class="btn-save" onclick="saveUserChanges()">Save Changes</button>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        let currentAdminToken = null;
-        let editingUserId = null;
-
-        let userPage = 1;
-        let userLimit = 10;
-        let userQuery = "";
-
-        function applyUserSearch() {
-            userQuery = document.getElementById('userSearch').value.trim();
-            userPage = 1;
-            loadUsers();
-        }
-
-        function clearUserSearch() {
-            document.getElementById('userSearch').value = '';
-            userQuery = '';
-            userPage = 1;
-            loadUsers();
-        }
-
-        function renderPagination(total, page, limit) {
-            const totalPages = Math.max(1, Math.ceil(total / limit));
-            const container = document.getElementById('usersPagination');
-            container.innerHTML = '';
-
-            if (totalPages <= 1) return;
-
-            for (let p = 1; p <= totalPages; p++) {
-                const btn = document.createElement('button');
-                btn.textContent = p;
-                if (p === page) btn.classList.add('active');
-                btn.onclick = () => { userPage = p; loadUsers(); };
-                container.appendChild(btn);
-            }
-        }
-
-        
-        // Check authentication
-        function checkAuth() {
-            currentAdminToken = sessionStorage.getItem('admin_token');
-            if (!currentAdminToken) {
-                window.location.href = '/admin/login.html';
-                return false;
-            }
-            return true;
-        }
-        
-        // Load data on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            if (checkAuth()) {
-                loadStats();
-                loadUsers();
-            }
-        });
-        
-        // Load dashboard statistics
-        async function loadStats() {
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({ action: 'get_stats' })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    document.getElementById('totalUsers').textContent = data.total_users;
-                    document.getElementById('paidUsers').textContent = data.paid_users;
-                    document.getElementById('totalListings').textContent = data.total_listings;
-                    document.getElementById('totalRevenue').textContent = '$' + (data.total_revenue || 0).toFixed(2);
-                }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-        
-        // Load users table
-        async function loadUsers() {
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({ action: 'get_users', page: userPage, limit: userLimit, q: userQuery })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    displayUsersTable(data.users);
-                    renderPagination(data.total || 0, data.page || userPage, data.limit || userLimit);
-                } else {
-                    document.getElementById('usersTable').innerHTML = '<p>Error loading users</p>';
-                }
-            } catch (error) {
-                document.getElementById('usersTable').innerHTML = '<p>Error: ' + error.message + '</p>';
-            }
-        }
-        
-        function displayUsersTable(users) {
-            let html = '<table><thead><tr><th>Email</th><th>Name</th><th>City</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
-            
-            users.forEach(user => {
-                const badgeClass = 'badge badge-' + (user.payment_status || 'pending');
-                html += `<tr>
-                    <td>${user.email}</td>
-                    <td>${user.name}</td>
-                    <td>${user.city}</td>
-                    <td><span class="${badgeClass}">${user.payment_status || 'pending'}</span></td>
-                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                    <td>
-                        <button class="action-btn btn-edit" onclick="editUser(${user.id})">Edit</button>
-                        <button class="action-btn btn-delete" onclick="deleteUser(${user.id}, '${user.email}')">Delete</button>
-                    </td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table>';
-            document.getElementById('usersTable').innerHTML = html;
-        }
-        
-        // Load listings table
-        async function loadListings() {
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({ action: 'get_listings' })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    displayListingsTable(data.listings);
-                }
-            } catch (error) {
-                console.error('Error loading listings:', error);
-            }
-        }
-        
-        function displayListingsTable(listings) {
-            let html = '<table><thead><tr><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
-            
-            listings.forEach(listing => {
-                html += `<tr>
-                    <td>${listing.title}</td>
-                    <td>${listing.user_name}</td>
-                    <td>${listing.city}</td>
-                    <td>$${listing.price || 'N/A'}</td>
-                    <td>${new Date(listing.created_at).toLocaleDateString()}</td>
-                    <td>
-                        <button class="action-btn btn-delete" onclick="deleteListing(${listing.id})">Delete</button>
-                    </td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table>';
-            document.getElementById('listingsTable').innerHTML = html;
-        }
-        
-        // Load payments table
-        async function loadPayments() {
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({ action: 'get_payments' })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    displayPaymentsTable(data.payments);
-                }
-            } catch (error) {
-                console.error('Error loading payments:', error);
-            }
-        }
-        
-        function displayPaymentsTable(payments) {
-            let html = '<table><thead><tr><th>User Email</th><th>Amount</th><th>Gateway</th><th>Status</th><th>Date</th></tr></thead><tbody>';
-            
-            payments.forEach(payment => {
-                html += `<tr>
-                    <td>${payment.user_email}</td>
-                    <td>$${(payment.amount / 100).toFixed(2)}</td>
-                    <td>${payment.gateway}</td>
-                    <td><span class="badge badge-${payment.status}">${payment.status}</span></td>
-                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table>';
-            document.getElementById('paymentsTable').innerHTML = html;
-        }
-        
-        // Switch tabs
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (tabName === 'listings') loadListings();
-            else if (tabName === 'payments') loadPayments();
-        }
-        
-        // Edit user
-        async function editUser(userId) {
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({ action: 'get_user', user_id: userId })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    editingUserId = userId;
-                    document.getElementById('editEmail').value = data.user.email;
-                    document.getElementById('editName').value = data.user.name;
-                    document.getElementById('editCity').value = data.user.city;
-                    document.getElementById('editPaymentStatus').value = data.user.payment_status || 'pending';
-                    document.getElementById('editUserModal').classList.add('active');
-                }
-            } catch (error) {
-                alert('Error loading user: ' + error.message);
-            }
-        }
-        
-        // Save user changes
-        async function saveUserChanges() {
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({
-                        action: 'update_user',
-                        user_id: editingUserId,
-                        name: document.getElementById('editName').value,
-                        city: document.getElementById('editCity').value,
-                        payment_status: document.getElementById('editPaymentStatus').value
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    closeModal('editUserModal');
-                    loadUsers();
-                    loadStats();
-                    alert('User updated successfully');
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Delete user
-        async function deleteUser(userId, email) {
-            if (!confirm(`Are you sure you want to delete ${email}? This cannot be undone.`)) {
-                return;
-            }
-            
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({
-                        action: 'delete_user',
-                        user_id: userId
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    loadUsers();
-                    loadStats();
-                    alert('User deleted successfully');
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
+
+
+
+            
+
+
+            <!-- Listings Tab -->
+
+
+            <div id="listings" class="tab-content">
+
+
+                <h2>Listings Management</h2>
+
+
+                <div id="listingsTable" class="loading">Loading listings...</div>
+
+
+            </div>
+
+
+            
+
+
+            <!-- Payments Tab -->
+
+
+            <div id="payments" class="tab-content">
+
+
+                <h2>Payments</h2>
+
+
+                <div id="paymentsTable" class="loading">Loading payments...</div>
+
+
+            <div id="cities" class="tab-content">
+                <h2>City Access</h2>
+                <div class="city-tools">
+                    <input type="number" id="cityUserId" placeholder="User ID">
+                    <input type="text" id="cityName" placeholder="City (e.g., Yorkton)">
+                    <button class="action-btn btn-verify" onclick="addCityAccess()">Add City</button>
+                </div>
+                <div id="cityAccessTable" class="loading">Loading city access...</div>
+            </div>
+
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+    
+
+
+    <!-- Edit User Modal -->
+
+
+    <div id="editUserModal" class="modal">
+
+
+        <div class="modal-content">
+
+
+            <h3>Edit User</h3>
+
+
+            <div class="form-group">
+
+
+                <label>Email</label>
+
+
+                <input type="email" id="editEmail" readonly>
+
+
+            </div>
+
+
+            <div class="form-group">
+
+
+                <label>Name</label>
+
+
+                <input type="text" id="editName">
+
+
+            </div>
+
+
+            <div class="form-group">
+
+
+                <label>City</label>
+
+
+                <input type="text" id="editCity">
+
+
+            </div>
+
+
+            <div class="form-group">
+
+
+                <label>Payment Status</label>
+
+
+                <select id="editPaymentStatus">
+
+
+                    <option value="pending">Pending</option>
+
+
+                    <option value="verified">Verified</option>
+
+
+                    <option value="failed">Failed</option>
+
+
+                </select>
+
+
+            </div>
+
+
+            <div class="modal-buttons">
+
+
+                <button class="btn-cancel" onclick="closeModal('editUserModal')">Cancel</button>
+
+
+                <button class="btn-save" onclick="saveUserChanges()">Save Changes</button>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+    
+
+
+    <script>
+
+
+        let currentAdminToken = null;
+
+
+        let editingUserId = null;
+
+
+
+        let userPage = 1;
+
+        let userLimit = 10;
+
+        let userQuery = "";
+
+
+
+        function applyUserSearch() {
+
+            userQuery = document.getElementById('userSearch').value.trim();
+
+            userPage = 1;
+
+            loadUsers();
+
+        }
+
+
+
+        function clearUserSearch() {
+
+            document.getElementById('userSearch').value = '';
+
+            userQuery = '';
+
+            userPage = 1;
+
+            loadUsers();
+
+        }
+
+
+
+        function renderPagination(total, page, limit) {
+
+            const totalPages = Math.max(1, Math.ceil(total / limit));
+
+            const container = document.getElementById('usersPagination');
+
+            container.innerHTML = '';
+
+
+
+            if (totalPages <= 1) return;
+
+
+
+            for (let p = 1; p <= totalPages; p++) {
+
+                const btn = document.createElement('button');
+
+                btn.textContent = p;
+
+                if (p === page) btn.classList.add('active');
+
+                btn.onclick = () => { userPage = p; loadUsers(); };
+
+                container.appendChild(btn);
+
+            }
+
+        }
+
+
+
+
+        
+
+
+        // Check authentication
+
+
+        function checkAuth() {
+
+
+            currentAdminToken = sessionStorage.getItem('admin_token');
+
+
+            if (!currentAdminToken) {
+
+
+                window.location.href = '/admin/login.html';
+
+
+                return false;
+
+
+            }
+
+
+            return true;
+
+
+        }
+
+
+        
+
+
+        // Load data on page load
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+
+            if (checkAuth()) {
+
+
+                loadStats();
+
+
+                loadUsers();
+
+
+            }
+
+
+        });
+
+
+        
+
+
+        // Load dashboard statistics
+
+
+        async function loadStats() {
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({ action: 'get_stats' })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    document.getElementById('totalUsers').textContent = data.total_users;
+
+
+                    document.getElementById('paidUsers').textContent = data.paid_users;
+
+
+                    document.getElementById('totalListings').textContent = data.total_listings;
+
+
+                    document.getElementById('totalRevenue').textContent = '$' + (data.total_revenue || 0).toFixed(2);
+
+
+                }
+
+
+            } catch (error) {
+
+
+                console.error('Error loading stats:', error);
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        // Load users table
+
+
+        async function loadUsers() {
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({ action: 'get_users', page: userPage, limit: userLimit, q: userQuery })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    displayUsersTable(data.users);
+
+                    renderPagination(data.total || 0, data.page || userPage, data.limit || userLimit);
+
+
+                } else {
+
+
+                    document.getElementById('usersTable').innerHTML = '<p>Error loading users</p>';
+
+
+                }
+
+
+            } catch (error) {
+
+
+                document.getElementById('usersTable').innerHTML = '<p>Error: ' + error.message + '</p>';
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        function displayUsersTable(users) {
+
+
+            let html = '<table><thead><tr><th>Email</th><th>Name</th><th>City</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
+
+
+            
+
+
+            users.forEach(user => {
+
+
+                const badgeClass = 'badge badge-' + (user.payment_status || 'pending');
+
+
+                html += `<tr>
+
+
+                    <td>${user.email}</td>
+
+
+                    <td>${user.name}</td>
+
+
+                    <td>${user.city}</td>
+
+
+                    <td><span class="${badgeClass}">${user.payment_status || 'pending'}</span></td>
+
+
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+
+
+                    <td>
+
+
+                        <button class="action-btn btn-edit" onclick="editUser(${user.id})">Edit</button>
+
+
+                        <button class="action-btn btn-delete" onclick="deleteUser(${user.id}, '${user.email}')">Delete</button>
+
+
+                    </td>
+
+
+                </tr>`;
+
+
+            });
+
+
+            
+
+
+            html += '</tbody></table>';
+
+
+            document.getElementById('usersTable').innerHTML = html;
+
+
+        }
+
+
+        
+
+
+        // Load listings table
+
+
+        async function loadListings() {
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({ action: 'get_listings' })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    displayListingsTable(data.listings);
+
+
+                }
+
+
+            } catch (error) {
+
+
+                console.error('Error loading listings:', error);
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        function displayListingsTable(listings) {
+
+
+            let html = '<table><thead><tr><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+
+
+            
+
+
+            listings.forEach(listing => {
+
+
+                html += `<tr>
+
+
+                    <td>${listing.title}</td>
+
+
+                    <td>${listing.user_name}</td>
+
+
+                    <td>${listing.city}</td>
+
+
+                    <td>$${listing.price || 'N/A'}</td>
+
+
+                    <td>${new Date(listing.created_at).toLocaleDateString()}</td>
+
+
+                    <td>
+
+
+                        <button class="action-btn btn-delete" onclick="deleteListing(${listing.id})">Delete</button>
+
+
+                    </td>
+
+
+                </tr>`;
+
+
+            });
+
+
+            
+
+
+            html += '</tbody></table>';
+
+
+            document.getElementById('listingsTable').innerHTML = html;
+
+
+        }
+
+
+        
+
+
+        // Load payments table
+
+
+        async function loadPayments() {
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({ action: 'get_payments' })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    displayPaymentsTable(data.payments);
+
+
+                }
+
+
+            } catch (error) {
+
+
+                console.error('Error loading payments:', error);
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        function displayPaymentsTable(payments) {
+
+
+            let html = '<table><thead><tr><th>User Email</th><th>Amount</th><th>Gateway</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+
+
+            
+
+
+            payments.forEach(payment => {
+
+
+                html += `<tr>
+
+
+                    <td>${payment.user_email}</td>
+
+
+                    <td>$${(payment.amount / 100).toFixed(2)}</td>
+
+
+                    <td>${payment.gateway}</td>
+
+
+                    <td><span class="badge badge-${payment.status}">${payment.status}</span></td>
+
+
+                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+
+
+                </tr>`;
+
+
+            });
+
+
+            
+
+
+            html += '</tbody></table>';
+
+
+            document.getElementById('paymentsTable').innerHTML = html;
+
+
+        }
+
+
+        
+
+
+
+        // Load city access table
+        async function loadCityAccess() {
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'get_city_access' })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    displayCityAccessTable(data.rows);
+                } else {
+                    document.getElementById('cityAccessTable').innerHTML = '<p>Error loading city access</p>';
+                }
+            } catch (error) {
+                document.getElementById('cityAccessTable').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        }
+
+        function displayCityAccessTable(rows) {
+            if (!rows || rows.length === 0) {
+                document.getElementById('cityAccessTable').innerHTML = '<p>No city access records yet.</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>User</th><th>City</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>';
+
+            rows.forEach(row => {
+                const badgeClass = row.status === 'approved' ? 'badge badge-approved' : 'badge badge-requested';
+                const actionBtn = row.status === 'requested'
+                    ? `<button class="action-btn btn-verify" onclick="approveCity(${row.id})">Approve</button>`
+                    : `<button class="action-btn btn-delete" onclick="revokeCity(${row.id})">Revoke</button>`;
+
+                html += `<tr>
+                    <td>${row.email}</td>
+                    <td>${row.city}</td>
+                    <td><span class="${badgeClass}">${row.status}</span></td>
+                    <td>${new Date(row.created_at).toLocaleDateString()}</td>
+                    <td>${actionBtn}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('cityAccessTable').innerHTML = html;
+        }
+
+        async function approveCity(id) {
+            await fetch('/backend/api/admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentAdminToken
+                },
+                body: JSON.stringify({ action: 'approve_city', id: id })
+            });
+            loadCityAccess();
+        }
+
+        async function revokeCity(id) {
+            await fetch('/backend/api/admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentAdminToken
+                },
+                body: JSON.stringify({ action: 'revoke_city', id: id })
+            });
+            loadCityAccess();
+        }
+
+        async function addCityAccess() {
+            const userId = parseInt(document.getElementById('cityUserId').value || '0');
+            const city = document.getElementById('cityName').value.trim();
+
+            if (!userId || !city) {
+                alert('User ID and City are required');
+                return;
+            }
+
+            const response = await fetch('/backend/api/admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentAdminToken
+                },
+                body: JSON.stringify({ action: 'add_city_access', user_id: userId, city: city })
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                alert(data.error || 'Failed to add city');
+            }
+
+            document.getElementById('cityName').value = '';
+            loadCityAccess();
+        }
+
+        // Switch tabs
+
+
+        function switchTab(tabName) {
+
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+
+
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+
+
+            
+
+
+            document.getElementById(tabName).classList.add('active');
+
+
+            event.target.classList.add('active');
+
+
+            
+
+
+            if (tabName === 'listings') loadListings();
+
+
+            else if (tabName === 'payments') loadPayments();
+            else if (tabName === 'cities') loadCityAccess();
+
+
+        }
+
+
+        
+
+
+        // Edit user
+
+
+        async function editUser(userId) {
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({ action: 'get_user', user_id: userId })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    editingUserId = userId;
+
+
+                    document.getElementById('editEmail').value = data.user.email;
+
+
+                    document.getElementById('editName').value = data.user.name;
+
+
+                    document.getElementById('editCity').value = data.user.city;
+
+
+                    document.getElementById('editPaymentStatus').value = data.user.payment_status || 'pending';
+
+
+                    document.getElementById('editUserModal').classList.add('active');
+
+
+                }
+
+
+            } catch (error) {
+
+
+                alert('Error loading user: ' + error.message);
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        // Save user changes
+
+
+        async function saveUserChanges() {
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({
+
+
+                        action: 'update_user',
+
+
+                        user_id: editingUserId,
+
+
+                        name: document.getElementById('editName').value,
+
+
+                        city: document.getElementById('editCity').value,
+
+
+                        payment_status: document.getElementById('editPaymentStatus').value
+
+
+                    })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    closeModal('editUserModal');
+
+
+                    loadUsers();
+
+
+                    loadStats();
+
+
+                    alert('User updated successfully');
+
+
+                } else {
+
+
+                    alert('Error: ' + data.error);
+
+
+                }
+
+
+            } catch (error) {
+
+
+                alert('Error: ' + error.message);
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        // Delete user
+
+
+        async function deleteUser(userId, email) {
+
+
+            if (!confirm(`Are you sure you want to delete ${email}? This cannot be undone.`)) {
+
+
+                return;
+
+
+            }
+
+
+            
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({
+
+
+                        action: 'delete_user',
+
+
+                        user_id: userId
+
+
+                    })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    loadUsers();
+
+
+                    loadStats();
+
+
+                    alert('User deleted successfully');
+
+
+                } else {
+
+
+                    alert('Error: ' + data.error);
+
+
+                }
+
+
+            } catch (error) {
+
+
+                alert('Error: ' + error.message);
+
+
+            }
+
+
+        }
+
+
+        
+
+
         
         // Mark e-transfer as received
         async function markPaid(userId) {
@@ -742,46 +2184,132 @@
             }
         }
 
-// Delete listing
-        async function deleteListing(listingId) {
-            if (!confirm('Delete this listing?')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch('/backend/api/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + currentAdminToken
-                    },
-                    body: JSON.stringify({
-                        action: 'delete_listing',
-                        listing_id: listingId
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    loadListings();
-                    loadStats();
-                    alert('Listing deleted');
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Modal functions
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-        
-        // Logout
-        function logout() {
-            sessionStorage.removeItem('admin_token');
-            window.location.href = '/admin/login.html';
-        }
-    </script>
-</body>
-</html>
+// Delete listing
+
+
+        async function deleteListing(listingId) {
+
+
+            if (!confirm('Delete this listing?')) {
+
+
+                return;
+
+
+            }
+
+
+            
+
+
+            try {
+
+
+                const response = await fetch('/backend/api/admin.php', {
+
+
+                    method: 'POST',
+
+
+                    headers: {
+
+
+                        'Content-Type': 'application/json',
+
+
+                        'Authorization': 'Bearer ' + currentAdminToken
+
+
+                    },
+
+
+                    body: JSON.stringify({
+
+
+                        action: 'delete_listing',
+
+
+                        listing_id: listingId
+
+
+                    })
+
+
+                });
+
+
+                
+
+
+                const data = await response.json();
+
+
+                if (data.success) {
+
+
+                    loadListings();
+
+
+                    loadStats();
+
+
+                    alert('Listing deleted');
+
+
+                }
+
+
+            } catch (error) {
+
+
+                alert('Error: ' + error.message);
+
+
+            }
+
+
+        }
+
+
+        
+
+
+        // Modal functions
+
+
+        function closeModal(modalId) {
+
+
+            document.getElementById(modalId).classList.remove('active');
+
+
+        }
+
+
+        
+
+
+        // Logout
+
+
+        function logout() {
+
+
+            sessionStorage.removeItem('admin_token');
+
+
+            window.location.href = '/admin/login.html';
+
+
+        }
+
+
+    </script>
+
+
+</body>
+
+
+</html>
+
+

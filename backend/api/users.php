@@ -3,6 +3,7 @@ session_start();
 header('Content-Type: application/json');
 
 require_once '../config/database.php';
+require_once '../middleware/auth.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
@@ -14,6 +15,12 @@ if ($action === 'register') {
     logout();
 } elseif ($action === 'check_session') {
     check_session();
+} elseif ($action === 'check_payment') {
+    check_payment();
+} elseif ($action === 'get_city_access') {
+    get_city_access($conn);
+} elseif ($action === 'request_city_access') {
+    request_city_access($conn);
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 }
@@ -39,8 +46,8 @@ function register($conn) {
     // Hash password
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
     
-    // Insert user
-    $sql = "INSERT INTO users (email, password_hash, name, city, phone) VALUES (?, ?, ?, ?, ?)";
+    // Insert user with payment_status = 'pending'
+    $sql = "INSERT INTO users (email, password_hash, name, city, phone, payment_status) VALUES (?, ?, ?, ?, ?, 'pending')";
     $stmt = $conn->prepare($sql);
     
     if (!$stmt) {
@@ -53,6 +60,13 @@ function register($conn) {
     try {
         if ($stmt->execute()) {
             $user_id = $stmt->insert_id;
+            // Default city access (approved)
+            $city_access = $conn->prepare("INSERT IGNORE INTO user_city_access (user_id, city, status) VALUES (?, ?, 'approved')");
+            if ($city_access) {
+                $city_access->bind_param("is", $user_id, $city);
+                $city_access->execute();
+                $city_access->close();
+            }
             echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'user_id' => $user_id]);
         } else {
             if ($conn->errno === 1062) {
@@ -96,16 +110,11 @@ function login($conn) {
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         
-        // Check if payment is verified
-        if ($row['payment_status'] !== 'verified') {
-            echo json_encode(['success' => false, 'message' => 'Please complete payment to activate your account']);
-            return;
-        }
-        
         if (password_verify($password, $row['password_hash'])) {
             $_SESSION['user_id'] = $row['id'];
             $_SESSION['user_name'] = $row['name'];
             $_SESSION['user_city'] = $row['city'];
+            $_SESSION['payment_status'] = $row['payment_status'];
             
             // Update last login
             $update_sql = "UPDATE users SET last_login = NOW() WHERE id = ?";
@@ -114,7 +123,18 @@ function login($conn) {
             $update_stmt->execute();
             $update_stmt->close();
             
-            echo json_encode(['success' => true, 'message' => 'Login successful']);
+            if ($row['payment_status'] === 'verified') {
+                // Ensure default city access exists
+                $city_access = $conn->prepare("INSERT IGNORE INTO user_city_access (user_id, city, status) VALUES (?, ?, 'approved')");
+                if ($city_access) {
+                    $city_access->bind_param("is", $row['id'], $row['city']);
+                    $city_access->execute();
+                    $city_access->close();
+                }
+                echo json_encode(['success' => true, 'message' => 'Login successful', 'redirect' => '/my-listings.html']);
+            } else {
+                echo json_encode(['success' => true, 'message' => 'Login successful - please complete payment', 'redirect' => '/payment-checkout.html', 'needs_payment' => true]);
+            }
         } else {
             echo json_encode(['success' => false, 'message' => 'Incorrect password']);
         }
@@ -136,10 +156,109 @@ function check_session() {
             'logged_in' => true,
             'user_id' => $_SESSION['user_id'],
             'name' => $_SESSION['user_name'],
-            'city' => $_SESSION['user_city']
+            'city' => $_SESSION['user_city'],
+            'payment_status' => $_SESSION['payment_status'] ?? 'pending'
         ]);
     } else {
         echo json_encode(['logged_in' => false]);
     }
+}
+
+function check_payment() {
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['verified' => false, 'message' => 'Not logged in']);
+        return;
+    }
+    
+    echo json_encode([
+        'verified' => ($_SESSION['payment_status'] ?? null) === 'verified',
+        'payment_status' => $_SESSION['payment_status'] ?? 'pending',
+        'user_id' => $_SESSION['user_id']
+    ]);
+}
+
+function get_city_access($conn) {
+    if (!is_logged_in()) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        return;
+    }
+
+    $user_id = get_user_id();
+    $stmt = $conn->prepare("SELECT city, status, created_at FROM user_city_access WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $approved = [];
+    $requested = [];
+    while ($row = $result->fetch_assoc()) {
+        if ($row['status'] === 'approved') {
+            $approved[] = $row['city'];
+        } else {
+            $requested[] = $row['city'];
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'approved' => $approved,
+        'requested' => $requested,
+        'total' => count($approved) + count($requested)
+    ]);
+    $stmt->close();
+}
+
+function request_city_access($conn) {
+    if (!is_logged_in()) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        return;
+    }
+
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
+        return;
+    }
+
+    $city = $conn->real_escape_string($_POST['city'] ?? '');
+    if (empty($city)) {
+        echo json_encode(['success' => false, 'message' => 'City is required']);
+        return;
+    }
+
+    $user_id = get_user_id();
+
+    // Enforce max 6
+    $count_stmt = $conn->prepare("SELECT COUNT(*) as count FROM user_city_access WHERE user_id = ?");
+    $count_stmt->bind_param("i", $user_id);
+    $count_stmt->execute();
+    $count = $count_stmt->get_result()->fetch_assoc()['count'] ?? 0;
+    $count_stmt->close();
+
+    if ($count >= 6) {
+        echo json_encode(['success' => false, 'message' => 'City limit reached (max 6)']);
+        return;
+    }
+
+    // Avoid duplicates
+    $check = $conn->prepare("SELECT id FROM user_city_access WHERE user_id = ? AND city = ?");
+    $check->bind_param("is", $user_id, $city);
+    $check->execute();
+    $exists = $check->get_result()->num_rows > 0;
+    $check->close();
+
+    if ($exists) {
+        echo json_encode(['success' => false, 'message' => 'City already requested or approved']);
+        return;
+    }
+
+    $stmt = $conn->prepare("INSERT INTO user_city_access (user_id, city, status) VALUES (?, ?, 'requested')");
+    $stmt->bind_param("is", $user_id, $city);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'City request submitted']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to submit request']);
+    }
+    $stmt->close();
 }
 ?>

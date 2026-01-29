@@ -191,6 +191,40 @@
 </div>
 
 <script>
+async function loadAllowedCities() {
+  const select = document.getElementById('city');
+  if (!select) return;
+
+  try {
+    const response = await fetch('/backend/api/users.php?action=get_city_access', {
+      credentials: 'include'
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      window.location.href = '/login.html';
+      return;
+    }
+
+    select.innerHTML = '<option value="">-- Select your city --</option>';
+    (data.approved || []).forEach(city => {
+      const opt = document.createElement('option');
+      opt.value = city;
+      opt.textContent = city;
+      select.appendChild(opt);
+    });
+
+    if (!data.approved || data.approved.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No city access yet';
+      select.appendChild(opt);
+    }
+  } catch (e) {
+    select.innerHTML = '<option value="">Unable to load cities</option>';
+  }
+}
+
 document.getElementById('listingForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
@@ -222,6 +256,8 @@ document.getElementById('listingForm').addEventListener('submit', async (e) => {
     document.getElementById('message').textContent = 'An error occurred. Please try again.';
   }
 });
+
+document.addEventListener('DOMContentLoaded', loadAllowedCities);
 </script>
 
 </body>

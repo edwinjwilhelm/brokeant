@@ -7,6 +7,22 @@ require_once '../middleware/auth.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
+function get_allowed_cities($conn, $user_id) {
+    $stmt = $conn->prepare("SELECT city FROM user_city_access WHERE user_id = ? AND status = 'approved'");
+    if (!$stmt) {
+        return [];
+    }
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $cities = [];
+    while ($row = $result->fetch_assoc()) {
+        $cities[] = $row['city'];
+    }
+    $stmt->close();
+    return $cities;
+}
+
 // Routes
 if ($action === 'create') {
     create_listing($conn);
@@ -32,58 +48,63 @@ function create_listing($conn) {
         echo json_encode(['success' => false, 'message' => 'Must be logged in']);
         return;
     }
+
     if (!is_payment_verified()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Payment verification required. Please complete your payment first.', 'redirect' => '/payment-checkout.html']);
         return;
     }
-    
+
     $user_id = get_user_id();
     $title = $conn->real_escape_string($_POST['title'] ?? '');
     $description = $conn->real_escape_string($_POST['description'] ?? '');
     $price = $_POST['price'] ?? NULL;
     $category = $conn->real_escape_string($_POST['category'] ?? '');
     $image_url = $conn->real_escape_string($_POST['image_url'] ?? '');
-    $city = $conn->real_escape_string(get_user_city() ?? '');
-    
-    // Validate
+    $city = $conn->real_escape_string($_POST['city'] ?? '');
+
     if (empty($title) || empty($description) || empty($city)) {
         echo json_encode(['success' => false, 'message' => 'Title, description, and city required']);
         return;
     }
-    
+
+    $allowed_cities = get_allowed_cities($conn, $user_id);
+    if (empty($allowed_cities) || !in_array($city, $allowed_cities, true)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'City not allowed for your account']);
+        return;
+    }
+
     if (strlen($title) > 150) {
         echo json_encode(['success' => false, 'message' => 'Title too long (max 150 chars)']);
         return;
     }
-    
+
     $price = $price ? floatval($price) : NULL;
-    
-    // Create expiration (30 days from now)
     $expiration = date('Y-m-d H:i:s', strtotime('+30 days'));
-    
+
     $sql = "INSERT INTO listings (user_id, title, description, price, category, image_url, city, expiration_date) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    
+
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error']);
         return;
     }
-    
+
     $stmt->bind_param("issdssss", $user_id, $title, $description, $price, $category, $image_url, $city, $expiration);
-    
+
     if ($stmt->execute()) {
         $listing_id = $stmt->insert_id;
         echo json_encode(['success' => true, 'message' => 'Listing created!', 'listing_id' => $listing_id]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to create listing']);
     }
-    
+
     $stmt->close();
 }
 
-// GET all active listings for the logged-in user's city (paid users only)
+// GET all active listings for allowed cities (paid users only)
 function get_all_listings($conn) {
     if (!is_payment_verified()) {
         http_response_code(403);
@@ -91,21 +112,25 @@ function get_all_listings($conn) {
         return;
     }
 
-    $city = get_user_city();
-    if (!$city) {
-        echo json_encode(['success' => false, 'message' => 'City not found']);
+    $user_id = get_user_id();
+    $allowed_cities = get_allowed_cities($conn, $user_id);
+    if (empty($allowed_cities)) {
+        echo json_encode(['success' => true, 'listings' => []]);
         return;
     }
+
+    $placeholders = implode(',', array_fill(0, count($allowed_cities), '?'));
+    $types = str_repeat('s', count($allowed_cities));
 
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
                    l.image_url, l.city, l.posted_date, u.name, u.reputation_score
             FROM listings l
             JOIN users u ON l.user_id = u.id
-            WHERE l.status = 'active' AND l.city = ?
+            WHERE l.status = 'active' AND l.city IN ($placeholders)
             ORDER BY l.posted_date DESC LIMIT 100";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $city);
+    $stmt->bind_param($types, ...$allowed_cities);
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -195,8 +220,8 @@ function get_single_listing($conn) {
     
     if ($result->num_rows > 0) {
         $listing = $result->fetch_assoc();
-        $user_city = get_user_city();
-        if ($user_city && $listing['city'] !== $user_city) {
+        $allowed_cities = get_allowed_cities($conn, get_user_id());
+        if (!in_array($listing['city'], $allowed_cities, true)) {
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             $stmt->close();
             return;
