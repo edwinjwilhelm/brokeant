@@ -39,6 +39,8 @@ if ($action === 'admin_login') {
     get_user($conn);
 } elseif ($action === 'update_user' && verifyToken($token)) {
     update_user($conn);
+} elseif ($action === 'mark_paid' && verifyToken($token)) {
+    mark_paid($conn);
 } elseif ($action === 'delete_user' && verifyToken($token)) {
     delete_user($conn);
 } elseif ($action === 'get_listings' && verifyToken($token)) {
@@ -213,6 +215,57 @@ function update_user($conn) {
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'User updated']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+}
+
+// Mark e-transfer as received (manual verification)
+function mark_paid($conn) {
+    $json = getJsonBody();
+    $user_id = intval($json['user_id'] ?? 0);
+
+    if ($user_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid user_id']);
+        return;
+    }
+
+    $amount = 2.10;
+    $currency = 'cad';
+    $gateway = 'etransfer';
+    $status = 'succeeded';
+    $payment_method = 'etransfer';
+    $transaction_id = 'etransfer';
+    $payment_date = date('Y-m-d H:i:s');
+
+    // Insert payment record only if none exists
+    $stmt = $conn->prepare("SELECT id FROM payments WHERE user_id = ? AND status = 'succeeded' LIMIT 1");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows === 0) {
+        $stmt = $conn->prepare("
+            INSERT INTO payments (user_id, amount, currency, gateway, transaction_id, status, payment_method)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->bind_param("idsssss", $user_id, $amount, $currency, $gateway, $transaction_id, $status, $payment_method);
+        $stmt->execute();
+    }
+
+    // Update user payment status
+    $stmt = $conn->prepare("
+        UPDATE users
+        SET payment_status = 'verified',
+            payment_date = ?,
+            payment_transaction_id = ?
+        WHERE id = ?
+    ");
+    $stmt->bind_param("ssi", $payment_date, $transaction_id, $user_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Marked as paid']);
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
     }
