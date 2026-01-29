@@ -308,6 +308,40 @@
         flex-wrap: wrap;
       }
     }
+  
+    .header-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .header-actions a {
+      display: inline-block;
+      background: #ffb34d;
+      color: #402600;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 13px;
+      transition: background 0.3s ease;
+    }
+
+    .header-actions a.alt {
+      background: #6c757d;
+      color: #fff;
+    }
+
+    .header-actions a:hover {
+      background: #ff9d1f;
+    }
+
+    .header-actions a.alt:hover {
+      background: #5a6268;
+    }
+
   </style>
 </head>
 <body>
@@ -333,6 +367,10 @@
       <h1>BrokeAnt Marketplace</h1>
       <p>Buy, Sell & Trade Locally</p>
       <p class="subtitle">Select your city to get started</p>
+      <div class="header-actions">
+        <a href="https://www.brokeant.com/register.html">Create Account</a>
+        <a class="alt" href="https://www.brokeant.com/login.html">Login</a>
+      </div>
     </div>
   </div>
   
