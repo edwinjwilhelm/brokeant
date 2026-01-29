@@ -8,6 +8,13 @@ require_once '../middleware/auth.php';
 
 $paypal_config = require_once '../config/paypal.php';
 
+// Live-mode kill switch (set PAYPAL_LIVE_ENABLED=1 to allow real payments)
+if (($paypal_config['mode'] ?? '') === 'live' && getenv('PAYPAL_LIVE_ENABLED') !== '1') {
+    http_response_code(503);
+    echo json_encode(['error' => 'Payments temporarily disabled']);
+    exit;
+}
+
 // Cache JSON body (read once)
 $rawBody = file_get_contents('php://input');
 $jsonBody = [];
