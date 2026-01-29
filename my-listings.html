@@ -288,7 +288,7 @@
       <input type="text" id="cityRequest" placeholder="Add a city (max 6)">
       <button onclick="requestCityAccess()">Request City</button>
     </div>
-    <small>Requests require admin approval.</small>
+    <small>Each additional city costs $2 via e-transfer. Requests require admin approval.</small>
   </div>
 
   <div class="header">
@@ -464,6 +464,8 @@ async function requestCityAccess() {
 
   if (!data.success) {
     alert(data.message || 'Request failed');
+  } else if (data.message) {
+    alert(data.message);
   }
 
   document.getElementById('cityRequest').value = '';

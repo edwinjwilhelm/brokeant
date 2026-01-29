@@ -255,7 +255,7 @@ function request_city_access($conn) {
     $stmt = $conn->prepare("INSERT INTO user_city_access (user_id, city, status) VALUES (?, ?, 'requested')");
     $stmt->bind_param("is", $user_id, $city);
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'City request submitted']);
+        echo json_encode(['success' => true, 'message' => 'City request submitted. Send $2 e-transfer to sales@brokeant.com with your email + city.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to submit request']);
     }

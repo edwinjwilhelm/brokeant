@@ -170,12 +170,29 @@ function get_users($conn) {
     }
 
     if ($where) {
-        $stmt = $conn->prepare("SELECT id, email, name, city, payment_status, created_at FROM users $where ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+        $stmt = $conn->prepare("
+            SELECT u.id, u.email, u.name, u.city, u.payment_status, u.created_at,
+                   GROUP_CONCAT(uca.city ORDER BY uca.city SEPARATOR ', ') AS approved_cities
+            FROM users u
+            LEFT JOIN user_city_access uca ON uca.user_id = u.id AND uca.status = 'approved'
+            $where
+            GROUP BY u.id
+            ORDER BY u.created_at DESC
+            LIMIT $limit OFFSET $offset
+        ");
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $result = $stmt->get_result();
     } else {
-        $result = $conn->query("SELECT id, email, name, city, payment_status, created_at FROM users ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+        $result = $conn->query("
+            SELECT u.id, u.email, u.name, u.city, u.payment_status, u.created_at,
+                   GROUP_CONCAT(uca.city ORDER BY uca.city SEPARATOR ', ') AS approved_cities
+            FROM users u
+            LEFT JOIN user_city_access uca ON uca.user_id = u.id AND uca.status = 'approved'
+            GROUP BY u.id
+            ORDER BY u.created_at DESC
+            LIMIT $limit OFFSET $offset
+        ");
     }
 
     $users = [];
@@ -222,6 +239,9 @@ function update_user($conn) {
     $stmt->bind_param("sssi", $name, $city, $payment_status, $user_id);
     
     if ($stmt->execute()) {
+        if ($payment_status === 'verified') {
+            ensure_city_access($conn, $user_id);
+        }
         echo json_encode(['success' => true, 'message' => 'User updated']);
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
