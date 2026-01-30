@@ -296,13 +296,13 @@
     .close-modal:hover {
       color: black;
     }
-    
     .modal img {
       width: 100%;
-      max-height: 300px;
-      object-fit: cover;
+      max-height: 60vh;
+      object-fit: contain;
       border-radius: 8px;
       margin-bottom: 20px;
+      background: #f7f7f7;
     }
     
     .modal h1 {
@@ -747,13 +747,37 @@
     });
     return filtered;
   }
-  
   function openModal(itemType, itemName, itemDesc, itemPrice, itemImage, itemEmail, itemId) {
     const modalBody = document.getElementById('modalBody');
     const user = getCurrentUser();
-    const isOwner = user && user.email === itemEmail;
-    let imageHTML = itemImage ? `<img src="${itemImage}" alt="${itemName}" onerror="this.style.display='none';">` : '';
-    
+    const isOwner = user && itemEmail && user.email === itemEmail;
+
+    const title = itemName || 'Item';
+    const heading = itemType ? `${itemType}: ${title}` : title;
+    const imageHTML = itemImage ? `<img src="${itemImage}" alt="${title}" onerror="this.style.display='none';">` : '';
+    const descHTML = itemDesc ? `<p>${itemDesc}</p>` : '<p>No description</p>';
+
+    let priceHTML = '';
+    if (itemPrice) {
+      const p = parseFloat(itemPrice);
+      priceHTML = isNaN(p) ? `<div class="price">${itemPrice}</div>` : `<div class="price">$${p.toFixed(2)}</div>`;
+    }
+
+    let contactHTML = '';
+    if (itemEmail) {
+      contactHTML = `
+      <div class="contact">
+        <strong>Contact Seller:</strong><br>
+        <a href="mailto:${itemEmail}">${itemEmail}</a>
+      </div>`;
+    } else {
+      contactHTML = `
+      <div class="contact">
+        <strong>Contact:</strong><br>
+        Contact info unavailable
+      </div>`;
+    }
+
     let actionButtons = '';
     if (isOwner) {
       actionButtons = `
@@ -763,6 +787,19 @@
         </div>
       `;
     }
+
+    modalBody.innerHTML = `
+      ${imageHTML}
+      <h1>${heading}</h1>
+      ${descHTML}
+      ${priceHTML}
+      ${contactHTML}
+      ${actionButtons}
+    `;
+
+    document.getElementById('detailModal').style.display = 'block';
+  }
+
     
     modalBody.innerHTML = `
       ${imageHTML}
@@ -923,7 +960,10 @@
 
     const imageUrl = item.image_url || item.itemImage || '';
     const title = item.title || item.itemName || 'Item';
+    const desc = item.description || item.itemDesc || '';
     const price = item.price || item.itemPrice || '';
+    const category = item.category || item.itemType || '';
+    const email = item.user_email || item.itemEmail || '';
     const city = item.city || '';
 
     let imageHTML = '';
@@ -950,6 +990,13 @@
           <div class="locked-note">Sign in and pay to see details</div>
         </div>
       `;
+    }
+
+    if (isVerified) {
+      itemBlock.style.cursor = 'pointer';
+      itemBlock.addEventListener('click', function() {
+        openModal(category, title, desc, price, imageUrl, email, item.id || 0);
+      });
     }
 
     document.getElementById('itemsContainer').appendChild(itemBlock);
