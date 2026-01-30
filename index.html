@@ -343,6 +343,68 @@
     }
 
   
+    .footer-corner.clickable {
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .welcome-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 20px;
+    }
+
+    .welcome-modal.active {
+      display: flex;
+    }
+
+    .welcome-content {
+      background: white;
+      border-radius: 14px;
+      padding: 22px 24px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+      animation: welcomePop 0.25s ease-out;
+    }
+
+    @keyframes welcomePop {
+      from { transform: translateY(10px) scale(0.98); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .welcome-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .welcome-header h3 {
+      color: #133d60;
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .welcome-close {
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .welcome-body {
+      color: #333;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
     .footer-corner {
       position: fixed;
       right: 12px;
@@ -561,10 +623,25 @@ document.addEventListener('DOMContentLoaded', checkAuth);
 </script>
 
 
-  <div class="footer-corner">
+  <div class="footer-corner clickable" onclick="openWelcomeModal()">
     <img src="/Cheerful%20ant%20on%20a%20forest%20path.png" alt="Alfred">
     <div class="footer-text">&copy; 2026 BrokeAnt Marketplace. All rights reserved.</div>
   </div>
+  </div>
+
+
+  <div id="welcomeModal" class="welcome-modal" onclick="closeWelcomeModal(event)">
+    <div class="welcome-content">
+      <div class="welcome-header">
+        <h3>Hi, Thanks for stopping by</h3>
+        <button class="welcome-close" onclick="closeWelcomeModal(event)" aria-label="Close">&times;</button>
+      </div>
+      <div class="welcome-body">
+        When you pay the $2 you will have access to all the items in your city, and all the cities that you are eligible to see.<br><br>
+        <strong>Brocante</strong> - "In France, a shop or market where secondhand goods are sold". But the French pronunciation is slightly different than the English way. So that's how I got my name. <strong>Broke Ant</strong>.<br><br>
+        Happy selling and buying!!
+      </div>
+    </div>
   </div>
 
 </body>
