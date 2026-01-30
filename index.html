@@ -622,6 +622,19 @@ function logout() {
 document.addEventListener('DOMContentLoaded', checkAuth);
 </script>
 
+<script>
+function openWelcomeModal() {
+  document.getElementById('welcomeModal').classList.add('active');
+}
+
+function closeWelcomeModal(e) {
+  const modal = document.getElementById('welcomeModal');
+  if (e && (e.target === modal || e.target.classList.contains('welcome-close'))) {
+    modal.classList.remove('active');
+  }
+}
+</script>
+
 
   <div class="footer-corner clickable" onclick="openWelcomeModal()">
     <img src="/Cheerful%20ant%20on%20a%20forest%20path.png" alt="Alfred">
