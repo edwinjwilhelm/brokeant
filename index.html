@@ -342,6 +342,37 @@
       background: #5a6268;
     }
 
+  
+    .footer-corner {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      text-align: right;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .footer-corner img {
+      width: 90px;
+      height: auto;
+      display: block;
+      margin-left: auto;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: #333;
+      background: rgba(255,255,255,0.85);
+      padding: 4px 6px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .footer-corner img { width: 70px; }
+      .footer-text { font-size: 10px; }
+    }
+
   </style>
 </head>
 <body>
@@ -516,6 +547,13 @@ function logout() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', checkAuth);
 </script>
+
+
+  <div class="footer-corner">
+    <img src="/Cheerful%20ant%20on%20a%20forest%20path.png" alt="Alfred">
+    <div class="footer-text">&copy; 2026 BrokeAnt Marketplace. All rights reserved.</div>
+  </div>
+  </div>
 
 </body>
 </html>
