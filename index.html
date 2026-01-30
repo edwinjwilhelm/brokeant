@@ -399,6 +399,31 @@
       cursor: pointer;
     }
 
+    .welcome-layout {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .welcome-layout img {
+      width: 100%;
+      max-width: 140px;
+      height: auto;
+      border-radius: 10px;
+      background: #f7f7f7;
+    }
+
+    @media (max-width: 520px) {
+      .welcome-layout {
+        grid-template-columns: 1fr;
+      }
+      .welcome-layout img {
+        max-width: 160px;
+        margin: 0 auto;
+      }
+    }
+
     .welcome-body {
       color: #333;
       font-size: 14px;
@@ -649,11 +674,18 @@ function closeWelcomeModal(e) {
         <h3>Hi, Thanks for stopping by</h3>
         <button class="welcome-close" onclick="closeWelcomeModal(event)" aria-label="Close">&times;</button>
       </div>
+      
       <div class="welcome-body">
-        When you pay the $2 you will have access to all the items in your city, and all the cities that you are eligible to see.<br><br>
-        <strong>Brocante</strong> - "In France, a shop or market where secondhand goods are sold". But the French pronunciation is slightly different than the English way. So that's how I got my name. <strong>Broke Ant</strong>.<br><br>
-        Happy selling and buying!!
+        <div class="welcome-layout">
+          <img src="/Cheerful%20ant%20on%20a%20forest%20path.png" alt="Cheerful Ant">
+          <div>
+            When you pay the $2 you will have access to all the items in your city, and all the cities that you are eligible to see.<br><br>
+            <strong>Brocante</strong> - "In France, a shop or market where secondhand goods are sold". But the French pronunciation is slightly different than the English way. So that's how I got my name. <strong>Broke Ant</strong>.<br><br>
+            Happy selling and buying!!
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 
