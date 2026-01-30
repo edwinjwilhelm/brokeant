@@ -314,7 +314,7 @@
 <script>
 // Check if user is logged in
 function checkAuth() {
-  fetch('/backend/api/users.php?action=check_auth', {
+  fetch('/backend/api/users.php?action=check_session', {
     credentials: 'include'
   })
   .then(r => r.json())
@@ -322,7 +322,12 @@ function checkAuth() {
     if (!d.logged_in) {
       window.location.href = '/login.html';
     } else {
+      if (d.payment_status !== 'verified') {
+        window.location.href = '/payment-checkout.html';
+        return;
+      }
       loadListings();
+      loadCityAccess();
     }
   });
 }
