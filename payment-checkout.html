@@ -173,6 +173,37 @@
             color: #333;
             text-decoration: none;
         }
+
+        .bank-links {
+            margin-top: 18px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .bank-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .bank-grid a {
+            display: block;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #333;
+            background: #fafafa;
+            font-size: 12px;
+        }
+
+        .bank-grid a:hover {
+            background: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -227,6 +258,21 @@
         </div>
 
         <a class="status-link" href="/payment-status.html">Check payment status</a>
+
+        <div class="bank-links">
+            <strong>Quick links to your bank:</strong>
+            <div class="bank-grid">
+                <a href="https://www.rbc.com" target="_blank" rel="noopener">RBC</a>
+                <a href="https://www.td.com" target="_blank" rel="noopener">TD</a>
+                <a href="https://www.scotiabank.com" target="_blank" rel="noopener">Scotiabank</a>
+                <a href="https://www.bmo.com" target="_blank" rel="noopener">BMO</a>
+                <a href="https://www.cibc.com" target="_blank" rel="noopener">CIBC</a>
+                <a href="https://www.nbc.ca" target="_blank" rel="noopener">National Bank</a>
+                <a href="https://www.tangerine.ca" target="_blank" rel="noopener">Tangerine</a>
+                <a href="https://www.simplii.com" target="_blank" rel="noopener">Simplii</a>
+                <a href="https://www.desjardins.com" target="_blank" rel="noopener">Desjardins</a>
+            </div>
+        </div>
 
         <div class="buttons">
             <a class="button" href="/login.html">Go to Login</a>
