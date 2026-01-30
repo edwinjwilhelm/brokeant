@@ -83,6 +83,29 @@ function create_listing($conn) {
     $price = $price ? floatval($price) : NULL;
     $expiration = date('Y-m-d H:i:s', strtotime('+30 days'));
 
+    // Prevent duplicates for same user (last 7 days)
+    $dup_sql = "SELECT id FROM listings
+                WHERE user_id = ?
+                  AND status = 'active'
+                  AND title = ?
+                  AND description = ?
+                  AND city = ?
+                  AND (price <=> ?)
+                  AND posted_date >= (NOW() - INTERVAL 7 DAY)
+                LIMIT 1";
+    $dup_stmt = $conn->prepare($dup_sql);
+    if ($dup_stmt) {
+        $dup_stmt->bind_param("isssd", $user_id, $title, $description, $city, $price);
+        $dup_stmt->execute();
+        $dup_result = $dup_stmt->get_result();
+        if ($dup_result && $dup_result->num_rows > 0) {
+            $dup_stmt->close();
+            echo json_encode(['success' => false, 'message' => 'Duplicate listing detected (same title/description/price in last 7 days).']);
+            return;
+        }
+        $dup_stmt->close();
+    }
+    
     $sql = "INSERT INTO listings (user_id, title, description, price, category, image_url, city, expiration_date) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
