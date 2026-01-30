@@ -2,8 +2,8 @@
 session_start();
 header('Content-Type: application/json');
 
-require_once '../config/database.php';
-require_once '../config/.env.loader.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/.env.loader.php';
 
 // Cache JSON body (read once)
 $rawBody = file_get_contents('php://input');

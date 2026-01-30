@@ -2,8 +2,8 @@
 session_start();
 header('Content-Type: application/json');
 
-require_once '../config/database.php';
-require_once '../middleware/auth.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
