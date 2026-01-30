@@ -234,7 +234,8 @@ document.getElementById('listingForm').addEventListener('submit', async (e) => {
   try {
     const response = await fetch('/backend/api/listings.php', {
       method: 'POST',
-      body: formData
+      body: formData,
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -248,7 +249,7 @@ document.getElementById('listingForm').addEventListener('submit', async (e) => {
       }, 2000);
     } else {
       messageEl.className = 'message error';
-      messageEl.textContent = 'Error: ' + data.message;
+      messageEl.textContent = 'Error: ' + (data.message || 'Unable to post listing');
     }
   } catch (error) {
     console.error('Error:', error);
