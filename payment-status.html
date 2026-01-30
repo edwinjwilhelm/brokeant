@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Status - BrokeAnt</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #133d60;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+
+    .status {
+      margin: 20px 0;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .pending { background: #fff3cd; color: #856404; }
+    .approved { background: #d4edda; color: #155724; }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      text-align: center;
+      padding: 10px 14px;
+      background: #ffb34d;
+      color: #402600;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .btn.secondary { background: #6c757d; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Payment Status</h1>
+    <div id="statusBox" class="status pending">Checking status...</div>
+    <div id="details" class="muted"></div>
+
+    <div class="buttons">
+      <a class="btn" href="/login.html">Login</a>
+      <a class="btn secondary" href="/payment-checkout.html">Payment Page</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadStatus() {
+      try {
+        const res = await fetch('/backend/api/users.php?action=check_session', { credentials: 'include' });
+        const data = await res.json();
+
+        const box = document.getElementById('statusBox');
+        const details = document.getElementById('details');
+
+        if (!data.logged_in) {
+          box.textContent = 'Not logged in';
+          box.className = 'status pending';
+          details.textContent = 'Please log in to see your payment status.';
+          return;
+        }
+
+        if (data.payment_status === 'verified') {
+          box.textContent = 'Approved';
+          box.className = 'status approved';
+          details.textContent = 'Your account is active. You can post listings now.';
+        } else {
+          box.textContent = 'Pending';
+          box.className = 'status pending';
+          details.textContent = 'We will activate your account within 1–24 hours after e-transfer is received.';
+        }
+      } catch (e) {
+        const box = document.getElementById('statusBox');
+        box.textContent = 'Error checking status';
+        box.className = 'status pending';
+      }
+    }
+
+    loadStatus();
+  </script>
+</body>
+</html>

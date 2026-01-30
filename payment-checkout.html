@@ -144,6 +144,35 @@
             display: inline-block;
             margin-top: 6px;
         }
+
+        .copy-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .copy-btn {
+            background: #eef2ff;
+            color: #1f2a44;
+            border: 1px solid #d6ddff;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .copy-btn:active {
+            transform: translateY(1px);
+        }
+
+        .status-link {
+            display: inline-block;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #333;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -176,10 +205,17 @@
             <div class="step">
                 <strong>Step 1:</strong> Send an Interac e-Transfer for <strong>$2.10 CAD</strong> to:
                 <div class="ref">sales@brokeant.com</div>
+                <div class="copy-row">
+                    <button class="copy-btn" type="button" onclick="copyEmail()">Copy email</button>
+                    <button class="copy-btn" type="button" onclick="copyAmount()">Copy amount</button>
+                </div>
             </div>
             <div class="step">
                 <strong>Step 2:</strong> In the message, include your registration email or your User ID (if shown below).
                 <div class="ref" id="userIdRef">User ID: not available</div>
+                <div class="copy-row">
+                    <button class="copy-btn" type="button" onclick="copyMessage()">Copy message</button>
+                </div>
             </div>
             <div class="step">
                 <strong>Step 3:</strong> We will activate your account after the transfer is received (usually within 24 hours).
@@ -189,6 +225,8 @@
         <div class="highlight">
             Tip: If you do not see a User ID above, include the exact email you used to register.
         </div>
+
+        <a class="status-link" href="/payment-status.html">Check payment status</a>
 
         <div class="buttons">
             <a class="button" href="/login.html">Go to Login</a>
@@ -201,6 +239,34 @@
         const userId = params.get('user_id');
         if (userId) {
             document.getElementById('userIdRef').textContent = 'User ID: ' + userId;
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            }
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+            return Promise.resolve();
+        }
+
+        function copyEmail() {
+            copyText('sales@brokeant.com');
+        }
+
+        function copyAmount() {
+            copyText('2.10 CAD');
+        }
+
+        function copyMessage() {
+            const msg = userId ? `BrokeAnt Registration - user_id ${userId}` : 'BrokeAnt Registration - please use my email';
+            copyText(msg);
         }
     </script>
 </body>
