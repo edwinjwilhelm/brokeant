@@ -7,6 +7,61 @@ require_once __DIR__ . '/../middleware/auth.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
+function load_badwords() {
+    static $words = null;
+    if ($words !== null) {
+        return $words;
+    }
+
+    $path = __DIR__ . '/../config/badwords.txt';
+    if (!file_exists($path)) {
+        $words = [];
+        return $words;
+    }
+
+    $content = file_get_contents($path);
+    if ($content === false) {
+        $words = [];
+        return $words;
+    }
+
+    $parts = preg_split('/\s+/u', $content);
+    $clean = [];
+    foreach ($parts as $p) {
+        $p = trim($p);
+        if ($p !== '') {
+            $clean[$p] = true;
+        }
+    }
+    $words = array_keys($clean);
+    return $words;
+}
+
+function contains_profanity($text) {
+    $words = load_badwords();
+    if (!$words) {
+        return false;
+    }
+
+    $lower = function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text);
+    foreach ($words as $word) {
+        $w = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
+        if ($w === '') {
+            continue;
+        }
+        if (preg_match('/^[a-z0-9]+$/i', $w)) {
+            if (preg_match('/\b' . preg_quote($w, '/') . '\b/u', $lower)) {
+                return true;
+            }
+        } else {
+            if (strpos($lower, $w) !== false) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function get_allowed_cities($conn, $user_id) {
     $stmt = $conn->prepare("SELECT city FROM user_city_access WHERE user_id = ? AND status = 'approved'");
     if (!$stmt) {
@@ -77,6 +132,11 @@ function create_listing($conn) {
 
     if (strlen($title) > 150) {
         echo json_encode(['success' => false, 'message' => 'Title too long (max 150 chars)']);
+        return;
+    }
+
+    if (contains_profanity($title . ' ' . $description)) {
+        echo json_encode(['success' => false, 'message' => 'Listing contains prohibited language. Please edit and try again.']);
         return;
     }
 
@@ -300,6 +360,11 @@ function update_listing($conn) {
     $verify_stmt->close();
     
     $price = $price ? floatval($price) : NULL;
+
+    if (contains_profanity($title . ' ' . $description)) {
+        echo json_encode(['success' => false, 'message' => 'Listing contains prohibited language. Please edit and try again.']);
+        return;
+    }
     
     $sql = "UPDATE listings SET title = ?, description = ?, price = ?, category = ?, image_url = ?, status = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
