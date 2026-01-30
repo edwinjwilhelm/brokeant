@@ -469,7 +469,16 @@
         
 
 
-        .btn-verify {
+        
+
+        .btn-warning {
+
+            background: #f0ad4e;
+
+            color: white;
+
+        }
+.btn-verify {
 
 
             background: #28a745;
@@ -887,7 +896,38 @@
             color: #155724;
         }
 
-    </style>
+    
+    .footer-corner {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      text-align: right;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .footer-corner img {
+      width: 90px;
+      height: auto;
+      display: block;
+      margin-left: auto;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: #333;
+      background: rgba(255,255,255,0.85);
+      padding: 4px 6px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .footer-corner img { width: 70px; }
+      .footer-text { font-size: 10px; }
+    }
+
+  </style>
 
 
 </head>
@@ -1563,21 +1603,16 @@
 
 
         }
-
-
-        
-
-
         function displayListingsTable(listings) {
 
 
             let html = '<table><thead><tr><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
 
 
-            
-
-
             listings.forEach(listing => {
+
+
+                const hasImage = listing.image_url && listing.image_url.trim() !== '';
 
 
                 html += `<tr>
@@ -1601,6 +1636,9 @@
                     <td>
 
 
+                        <button class="action-btn btn-warning" onclick="removeListingImage(${listing.id})" ${hasImage ? '' : 'disabled'}>Remove Image</button>
+
+
                         <button class="action-btn btn-delete" onclick="deleteListing(${listing.id})">Delete</button>
 
 
@@ -1613,9 +1651,6 @@
             });
 
 
-            
-
-
             html += '</tbody></table>';
 
 
@@ -1623,6 +1658,7 @@
 
 
         }
+
 
 
         
@@ -2306,6 +2342,12 @@
 
     </script>
 
+
+
+  <div class="footer-corner">
+    <img src="/Cheerful%20ant%20on%20a%20forest%20path.png" alt="Alfred">
+    <div class="footer-text">? 2026 BrokeAnt Marketplace. All rights reserved.</div>
+  </div>
 
 </body>
 
