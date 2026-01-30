@@ -123,9 +123,58 @@
             margin-bottom: 20px;
             font-size: 14px;
         }
+    
+    .footer-corner {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      text-align: right;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .footer-corner img {
+      width: 90px;
+      height: auto;
+      display: block;
+      margin-left: auto;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: #333;
+      background: rgba(255,255,255,0.85);
+      padding: 4px 6px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .footer-corner img { width: 70px; }
+      .footer-text { font-size: 10px; }
+    }
+
+  
+        .top-banner {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 12px 0 6px;
+        }
+        .top-banner img {
+            width: 160px;
+            max-width: 60vw;
+            height: auto;
+        }
+
     </style>
 </head>
 <body>
+
+  <div class="top-banner">
+    <img src="/waterhobo_ChatGPT%20Image%20Jan%2026,%202026,%2003_20_54%20PM.png" alt="BrokeAnt">
+  </div>
+
     <div class="login-container">
         <div class="header">
             <h1>🔒 Admin Login</h1>
@@ -196,5 +245,11 @@
             errorDiv.style.display = 'block';
         }
     </script>
+
+  <div class="footer-corner">
+    <img src="/Cheerful%20ant%20on%20a%20forest%20path.png" alt="Alfred">
+    <div class="footer-text">? 2026 BrokeAnt Marketplace. All rights reserved.</div>
+  </div>
+
 </body>
 </html>
