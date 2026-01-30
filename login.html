@@ -147,7 +147,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   try {
     const response = await fetch('/backend/api/users.php', {
       method: 'POST',
-      body: formData
+      body: formData,
+      credentials: 'include'
     });
     
     const data = await response.json();
