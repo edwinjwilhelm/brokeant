@@ -355,6 +355,43 @@
     }
 
   
+    .view-modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .view-modal-content img {
+      width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #f7f7f7;
+      margin-bottom: 15px;
+    }
+
+    .view-modal-content h3 {
+      color: #133d60;
+      margin-bottom: 6px;
+    }
+
+    .view-modal-content .price {
+      color: #ffb34d;
+      font-weight: bold;
+      margin: 8px 0 12px;
+    }
+
+    .view-modal-content .meta {
+      color: #777;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
     .footer-corner {
       position: fixed;
       right: 12px;
@@ -472,6 +509,17 @@
       </form>
     </div>
   </div>
+
+  <div id="viewModal" class="modal">
+    <div class="view-modal-content">
+      <div class="modal-header">
+        <h3>Listing Details</h3>
+        <button class="modal-close" onclick="closeViewModal()" aria-label="Close">&times;</button>
+      </div>
+      <div id="viewModalBody"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -515,7 +563,7 @@ function loadListings() {
         container.innerHTML += `
           <div class="listing-card">
             <img src="${listing.image_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'}" 
-                 alt="${listing.title}" class="listing-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
+                 alt="${listing.title}" class="listing-image" onclick="openViewModal(${listing.id})" style="cursor:pointer;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
             <div class="listing-content">
               <h3>${listing.title}</h3>
               ${listing.price ? `<div class="listing-price">$${parseFloat(listing.price).toFixed(2)}</div>` : ''}
@@ -591,6 +639,38 @@ function editListing(id) {
 
 function closeEditModal() {
   document.getElementById('editModal').classList.remove('active');
+}
+
+
+function openViewModal(id) {
+  const listing = listingsById[id];
+  if (!listing) {
+    alert('Listing not found.');
+    return;
+  }
+
+  const imageHtml = listing.image_url
+    ? `<img src="${listing.image_url}" alt="${listing.title}" onerror="this.style.display='none';">`
+    : '';
+
+  const priceHtml = listing.price
+    ? `<div class="price">$${parseFloat(listing.price).toFixed(2)}</div>`
+    : '';
+
+  const body = `
+    ${imageHtml}
+    <h3>${listing.title}</h3>
+    <div class="meta">${listing.city} • ${new Date(listing.posted_date).toLocaleDateString()}</div>
+    ${priceHtml}
+    <p>${listing.description || 'No description'}</p>
+  `;
+
+  document.getElementById('viewModalBody').innerHTML = body;
+  document.getElementById('viewModal').classList.add('active');
+}
+
+function closeViewModal() {
+  document.getElementById('viewModal').classList.remove('active');
 }
 
 async function saveEdit(e) {
