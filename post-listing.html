@@ -237,11 +237,16 @@ document.getElementById('listingForm').addEventListener('submit', async (e) => {
       body: formData,
       credentials: 'include'
     });
-    
-    const data = await response.json();
+    const text = await response.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = null;
+    }
     const messageEl = document.getElementById('message');
     
-    if (data.success) {
+    if (data && data.success) {
       messageEl.className = 'message success';
       messageEl.textContent = 'Listing posted successfully! Redirecting...';
       setTimeout(() => {
@@ -249,12 +254,16 @@ document.getElementById('listingForm').addEventListener('submit', async (e) => {
       }, 2000);
     } else {
       messageEl.className = 'message error';
-      messageEl.textContent = 'Error: ' + (data.message || 'Unable to post listing');
+      if (data && data.message) {
+        messageEl.textContent = 'Error: ' + data.message;
+      } else {
+        messageEl.textContent = `Error: Server returned ${response.status}. ${text ? text.slice(0, 200) : 'No response body.'}`;
+      }
     }
   } catch (error) {
     console.error('Error:', error);
     document.getElementById('message').className = 'message error';
-    document.getElementById('message').textContent = 'An error occurred. Please try again.';
+    document.getElementById('message').textContent = 'An error occurred. Please try again. ' + error.message;
   }
 });
 
