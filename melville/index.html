@@ -8,11 +8,13 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
+      padding-top: env(safe-area-inset-top);
       font-family: Arial, sans-serif;
       background: #f0f0f0;
       height: 100vh;
-      overflow: hidden;
+      overflow: auto;
     }
+
     
     header {
       position: fixed;
@@ -21,7 +23,7 @@
       right: 0;
       background: linear-gradient(135deg, #133d60, #184c75);
       color: white;
-      padding: 15px 20px;
+      padding: calc(15px + env(safe-area-inset-top)) 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -400,7 +402,7 @@
     }
   
     .auth-banner {
-      margin-top: 70px;
+      margin-top: 90px;
       background: #fff3cd;
       border: 1px solid #ffc107;
       border-radius: 8px;
