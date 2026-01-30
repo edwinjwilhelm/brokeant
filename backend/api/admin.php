@@ -347,10 +347,10 @@ function delete_user($conn) {
 // Get all listings
 function get_listings($conn) {
     $result = $conn->query("
-        SELECT l.id, l.title, l.price, l.city, l.created_at, u.name as user_name, u.email as user_email
+        SELECT l.id, l.title, l.price, l.city, l.posted_date AS created_at, u.name as user_name, u.email as user_email
         FROM listings l
         JOIN users u ON l.user_id = u.id
-        ORDER BY l.created_at DESC
+        ORDER BY l.posted_date DESC
     ");
     
     $listings = [];
