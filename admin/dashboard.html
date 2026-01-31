@@ -1483,7 +1483,7 @@
         function displayUsersTable(users) {
 
 
-            let html = '<table><thead><tr><th>Email</th><th>Name</th><th>City</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>City</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
 
 
             
@@ -1498,6 +1498,7 @@
                 html += `<tr>
 
 
+                    <td>${user.id}</td>
                     <td>${user.email}</td>
 
 
