@@ -505,16 +505,17 @@
     </div>
   </div>
   
-  <div class="cities-grid" id="citiesGrid">
-    <div class="no-listings">Loading cities...</div>
-  </div>
-  
   <div class="listings-section">
     <h2>Latest Listings</h2>
     <div class="listings-grid" id="listingsGrid">
       <div class="no-listings">Loading listings...</div>
     </div>
   </div>
+  <div class="cities-grid" id="citiesGrid">
+    <div class="no-listings">Loading cities...</div>
+  </div>
+  
+  
   
   <div class="footer">
     <p>&copy; 2026 BrokeAnt Marketplace. All rights reserved.</p>
@@ -656,6 +657,7 @@ function logout() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', checkAuth);
 loadCities();
+setInterval(loadListings, 30000);
 </script>
 
 <script>
