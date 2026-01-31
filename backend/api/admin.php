@@ -53,6 +53,8 @@ if ($action === 'admin_login') {
     delete_user($conn);
 } elseif ($action === 'get_listings' && verifyToken($token)) {
     get_listings($conn);
+} elseif ($action === 'approve_listing' && verifyToken($token)) {
+    approve_listing($conn);
 } elseif ($action === 'remove_listing_image' && verifyToken($token)) {
     remove_listing_image($conn);
 } elseif ($action === 'delete_listing' && verifyToken($token)) {
@@ -349,7 +351,7 @@ function delete_user($conn) {
 // Get all listings
 function get_listings($conn) {
     $result = $conn->query("
-        SELECT l.id, l.title, l.price, l.city, l.image_url, l.posted_date AS created_at, u.name as user_name, u.email as user_email
+        SELECT l.id, l.title, l.price, l.city, l.image_url, l.status, l.posted_date AS created_at, u.name as user_name, u.email as user_email
         FROM listings l
         JOIN users u ON l.user_id = u.id
         ORDER BY l.posted_date DESC
@@ -393,6 +395,27 @@ function get_payments($conn) {
     }
     
     echo json_encode(['success' => true, 'payments' => $payments]);
+}
+
+// Approve listing
+function approve_listing($conn) {
+    $json = getJsonBody();
+    $listing_id = intval($json['listing_id'] ?? 0);
+
+    if ($listing_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid listing id']);
+        return;
+    }
+
+    $stmt = $conn->prepare("UPDATE listings SET status = 'active' WHERE id = ?");
+    $stmt->bind_param("i", $listing_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Listing approved']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
 }
 
 // Remove listing image

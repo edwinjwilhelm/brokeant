@@ -168,8 +168,9 @@ function create_listing($conn) {
         $dup_stmt->close();
     }
     
-    $sql = "INSERT INTO listings (user_id, title, description, price, category, image_url, city, expiration_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $status = 'pending';
+    $sql = "INSERT INTO listings (user_id, title, description, price, category, image_url, city, expiration_date, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
@@ -177,10 +178,21 @@ function create_listing($conn) {
         return;
     }
 
-    $stmt->bind_param("issdssss", $user_id, $title, $description, $price, $category, $image_url, $city, $expiration);
+    $stmt->bind_param("issdsssss", $user_id, $title, $description, $price, $category, $image_url, $city, $expiration, $status);
 
     if ($stmt->execute()) {
         $listing_id = $stmt->insert_id;
+        // Email alert to admin (best-effort)
+        $to = 'sales@brokeant.com';
+        $subject = 'New listing pending approval';
+        $body = "A new listing is pending approval.\n\n"
+              . "ID: {$listing_id}\n"
+              . "User ID: {$user_id}\n"
+              . "Title: {$title}\n"
+              . "City: {$city}\n"
+              . "Price: " . ($price !== NULL ? $price : 'N/A') . "\n";
+        $headers = "From: BrokeAnt <no-reply@brokeant.com>\r\n";
+        @mail($to, $subject, $body, $headers);
         echo json_encode(['success' => true, 'message' => 'Listing created!', 'listing_id' => $listing_id]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to create listing']);
@@ -407,24 +419,31 @@ function update_listing($conn) {
     $status = $conn->real_escape_string($_POST['status'] ?? 'active');
     
     // Verify ownership
-    $verify_sql = "SELECT user_id FROM listings WHERE id = ?";
+    $verify_sql = "SELECT user_id, status FROM listings WHERE id = ?";
     $verify_stmt = $conn->prepare($verify_sql);
     $verify_stmt->bind_param("i", $listing_id);
     $verify_stmt->execute();
     $result = $verify_stmt->get_result();
     
-    if ($result->num_rows === 0 || $result->fetch_assoc()['user_id'] !== $user_id) {
+    $row = $result->fetch_assoc();
+    if ($result->num_rows === 0 || $row['user_id'] !== $user_id) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
         $verify_stmt->close();
         return;
     }
+    $current_status = $row['status'] ?? 'active';
     $verify_stmt->close();
-    
+
     $price = $price ? floatval($price) : NULL;
 
     if (contains_profanity($title . ' ' . $description)) {
         echo json_encode(['success' => false, 'message' => 'Listing contains prohibited language. Please edit and try again.']);
         return;
+    }
+
+    // Do not allow users to self-approve
+    if ($current_status === 'pending' && $status !== 'pending') {
+        $status = 'pending';
     }
     
     $sql = "UPDATE listings SET title = ?, description = ?, price = ?, category = ?, image_url = ?, status = ? WHERE id = ?";

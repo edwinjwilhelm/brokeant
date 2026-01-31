@@ -532,6 +532,19 @@
         
 
 
+        .badge-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-sold {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
         .badge-pending {
 
 
@@ -1608,7 +1621,7 @@
         function displayListingsTable(listings) {
 
 
-            let html = '<table><thead><tr><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
 
 
             listings.forEach(listing => {
@@ -1632,10 +1645,16 @@
                     <td>$${listing.price || 'N/A'}</td>
 
 
+                    <td><span class="badge badge-${listing.status}">${listing.status}</span></td>
+
+
                     <td>${new Date(listing.created_at).toLocaleDateString()}</td>
 
 
                     <td>
+
+
+                        ${listing.status === 'pending' ? `<button class="action-btn btn-verify" onclick="approveListing(${listing.id})">Approve</button>` : ''}
 
 
                         <button class="action-btn btn-warning" onclick="removeListingImage(${listing.id})" ${hasImage ? '' : 'disabled'}>Remove Image</button>
@@ -2224,6 +2243,31 @@
 
 // Delete listing
 
+
+        
+
+        async function approveListing(listingId) {
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'approve_listing', listing_id: listingId })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Listing approved');
+                    loadListings();
+                } else {
+                    alert('Error: ' + (data.error || 'Approval failed'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
 
         async function deleteListing(listingId) {
 

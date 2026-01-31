@@ -129,7 +129,12 @@
       background: #d4edda;
       color: #155724;
     }
-    
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
     .status-sold {
       background: #e2e3e5;
       color: #383d41;
@@ -568,7 +573,11 @@ function loadListings() {
               <div class="listing-meta">
                 ${listing.city} • ${new Date(listing.posted_date).toLocaleDateString()}
               </div>
-              <span class="listing-status ${listing.status === 'active' ? 'status-active' : 'status-sold'}">
+              <span class="listing-status ${
+                listing.status === 'active'
+                  ? 'status-active'
+                  : (listing.status === 'pending' ? 'status-pending' : 'status-sold')
+              }">
                 ${listing.status.toUpperCase()}
               </span>
               <div class="listing-meta" style="margin-top: 8px;">👁️ ${listing.views} views</div>
