@@ -112,6 +112,7 @@ function login($conn) {
         
         if (password_verify($password, $row['password_hash'])) {
             $_SESSION['user_id'] = $row['id'];
+            $_SESSION['user_email'] = $email;
             $_SESSION['user_name'] = $row['name'];
             $_SESSION['user_city'] = $row['city'];
             $_SESSION['payment_status'] = $row['payment_status'];

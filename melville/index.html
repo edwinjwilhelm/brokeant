@@ -358,6 +358,18 @@
       font-size: 12px;
     }
 
+
+    .modal .contact .share-email {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #555;
+    }
+    .modal .contact .share-email input {
+      transform: scale(1.1);
+    }
     .modal .contact .contact-status {
       margin-top: 8px;
       color: #667eea;
@@ -808,6 +820,11 @@
         <strong>Verified Seller</strong>
         <div class="contact-note">Use the form below to message the seller. Your email stays private.</div>
         <textarea id="contactMessage" rows="4" placeholder="Write your message..."></textarea>
+
+        <label class="share-email">
+          <input type="checkbox" id="shareEmail"> Share my email with the seller
+        </label>
+
         <button class="btn-contact" onclick="sendContactMessage(${itemId})">Send Message</button>
         <div class="contact-status" id="contactStatus"></div>
       </div>`;
@@ -850,7 +867,7 @@ function sendContactMessage(listingId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ action: 'contact_seller', listing_id: listingId, message: message })
+      body: JSON.stringify({ action: 'contact_seller', listing_id: listingId, message: message, share_email: !!document.getElementById('shareEmail')?.checked })
     })
     .then(r => r.json())
     .then(data => {

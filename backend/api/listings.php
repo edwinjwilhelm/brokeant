@@ -415,6 +415,7 @@ function contact_seller($conn) {
     $json = json_decode($raw, true);
     $listing_id = intval($json['listing_id'] ?? $_POST['listing_id'] ?? 0);
     $message = trim($json['message'] ?? $_POST['message'] ?? '');
+    $share_email = filter_var($json['share_email'] ?? $_POST['share_email'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     if ($listing_id <= 0 || $message === '') {
         echo json_encode(['success' => false, 'message' => 'Listing and message required']);
@@ -452,6 +453,7 @@ function contact_seller($conn) {
     }
 
     $buyer_name = get_user_name() ?: 'A verified buyer';
+    $buyer_email = $_SESSION['user_email'] ?? '';
     $subject = "BrokeAnt buyer inquiry: {$listing['title']}";
     $body = "You have a new message about your listing.\n\n"
           . "Listing: {$listing['title']}\n"
@@ -459,6 +461,9 @@ function contact_seller($conn) {
           . "Buyer: {$buyer_name}\n"
           . "Message:\n{$message}\n\n"
           . "Note: Buyer email is hidden by default.\n";
+    if ($share_email && $buyer_email) {
+        $body .= "\nBuyer email (shared): {$buyer_email}\n";
+    }
 
     send_smtp_message($listing['seller_email'], $subject, $body);
 
