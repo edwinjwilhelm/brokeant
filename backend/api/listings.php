@@ -64,6 +64,65 @@ function contains_profanity($text) {
     return false;
 }
 
+
+function is_local_upload($url) {
+    return is_string($url) && strpos($url, '/uploads/') === 0;
+}
+
+function delete_local_upload($url) {
+    if (!is_local_upload($url)) {
+        return;
+    }
+    $root = dirname(__DIR__, 2);
+    $path = $root . $url;
+    if (is_file($path)) {
+        @unlink($path);
+    }
+}
+
+function handle_image_upload($field) {
+    if (!isset($_FILES[$field]) || $_FILES[$field]['error'] === UPLOAD_ERR_NO_FILE) {
+        return ['url' => null, 'error' => null];
+    }
+
+    $file = $_FILES[$field];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['url' => null, 'error' => 'Image upload failed'];
+    }
+
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    if ($file['size'] > $maxSize) {
+        return ['url' => null, 'error' => 'Image too large (max 5MB)'];
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+    if ($finfo) finfo_close($finfo);
+
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png'
+    ];
+
+    if (!isset($allowed[$mime])) {
+        return ['url' => null, 'error' => 'Only JPG or PNG images are allowed'];
+    }
+
+    $uploadDir = dirname(__DIR__, 2) . '/uploads';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    $name = 'listing_' . get_user_id() . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $allowed[$mime];
+    $dest = $uploadDir . '/' . $name;
+
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        return ['url' => null, 'error' => 'Failed to save image'];
+    }
+
+    return ['url' => '/uploads/' . $name, 'error' => null];
+}
+
 function get_allowed_cities($conn, $user_id) {
     $stmt = $conn->prepare("SELECT city FROM user_city_access WHERE user_id = ? AND status = 'approved'");
     if (!$stmt) {
@@ -171,7 +230,16 @@ function create_listing($conn) {
         }
         $dup_stmt->close();
     }
-    
+
+    $upload = handle_image_upload('image_file');
+    if ($upload['error']) {
+        echo json_encode(['success' => false, 'message' => $upload['error']]);
+        return;
+    }
+    if ($upload['url']) {
+        $image_url = $upload['url'];
+    }
+
     $status = 'pending';
     $sql = "INSERT INTO listings (user_id, title, description, price, category, image_url, city, expiration_date, status) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -188,12 +256,19 @@ function create_listing($conn) {
         $listing_id = $stmt->insert_id;
         // Email alert to admin (best-effort)
         $subject = 'New listing pending approval';
-        $body = "A new listing is pending approval.\n\n"
-              . "ID: {$listing_id}\n"
-              . "User ID: {$user_id}\n"
-              . "Title: {$title}\n"
-              . "City: {$city}\n"
-              . "Price: " . ($price !== NULL ? $price : 'N/A') . "\n";
+        $body = "A new listing is pending approval.
+
+"
+              . "ID: {$listing_id}
+"
+              . "User ID: {$user_id}
+"
+              . "Title: {$title}
+"
+              . "City: {$city}
+"
+              . "Price: " . ($price !== NULL ? $price : 'N/A') . "
+";
         send_admin_alert($subject, $body);
         echo json_encode(['success' => true, 'message' => 'Listing created!', 'listing_id' => $listing_id]);
     } else {
@@ -481,7 +556,7 @@ function update_listing($conn) {
         echo json_encode(['success' => false, 'message' => 'Payment verification required']);
         return;
     }
-    
+
     $user_id = get_user_id();
     $listing_id = intval($_POST['id'] ?? 0);
     $title = $conn->real_escape_string($_POST['title'] ?? '');
@@ -490,14 +565,14 @@ function update_listing($conn) {
     $category = $conn->real_escape_string($_POST['category'] ?? '');
     $image_url = $conn->real_escape_string($_POST['image_url'] ?? '');
     $status = $conn->real_escape_string($_POST['status'] ?? 'active');
-    
+
     // Verify ownership
-    $verify_sql = "SELECT user_id, status FROM listings WHERE id = ?";
+    $verify_sql = "SELECT user_id, status, image_url FROM listings WHERE id = ?";
     $verify_stmt = $conn->prepare($verify_sql);
     $verify_stmt->bind_param("i", $listing_id);
     $verify_stmt->execute();
     $result = $verify_stmt->get_result();
-    
+
     $row = $result->fetch_assoc();
     if ($result->num_rows === 0 || $row['user_id'] !== $user_id) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -505,6 +580,7 @@ function update_listing($conn) {
         return;
     }
     $current_status = $row['status'] ?? 'active';
+    $current_image_url = $row['image_url'] ?? '';
     $verify_stmt->close();
 
     $price = $price ? floatval($price) : NULL;
@@ -514,21 +590,44 @@ function update_listing($conn) {
         return;
     }
 
+    $uploaded = false;
+    $upload = handle_image_upload('image_file');
+    if ($upload['error']) {
+        echo json_encode(['success' => false, 'message' => $upload['error']]);
+        return;
+    }
+    if ($upload['url']) {
+        $uploaded = true;
+        if (is_local_upload($current_image_url)) {
+            delete_local_upload($current_image_url);
+        }
+        $image_url = $upload['url'];
+    }
+
+    if (!$uploaded && $image_url !== $current_image_url && is_local_upload($current_image_url)) {
+        delete_local_upload($current_image_url);
+    }
+
+    if ($status === 'sold' && is_local_upload($image_url)) {
+        delete_local_upload($image_url);
+        $image_url = '';
+    }
+
     // Do not allow users to self-approve
     if ($current_status === 'pending' && $status !== 'pending') {
         $status = 'pending';
     }
-    
+
     $sql = "UPDATE listings SET title = ?, description = ?, price = ?, category = ?, image_url = ?, status = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ssdsssi", $title, $description, $price, $category, $image_url, $status, $listing_id);
-    
+
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Listing updated']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to update']);
     }
-    
+
     $stmt->close();
 }
 
@@ -548,16 +647,22 @@ function delete_listing($conn) {
     $listing_id = intval($_POST['id'] ?? 0);
     
     // Verify ownership
-    $verify_sql = "SELECT user_id FROM listings WHERE id = ?";
+    $verify_sql = "SELECT user_id, image_url FROM listings WHERE id = ?";
     $verify_stmt = $conn->prepare($verify_sql);
     $verify_stmt->bind_param("i", $listing_id);
     $verify_stmt->execute();
     $result = $verify_stmt->get_result();
     
-    if ($result->num_rows === 0 || $result->fetch_assoc()['user_id'] !== $user_id) {
+    $row = $result->fetch_assoc();
+
+    if ($result->num_rows === 0 || $row['user_id'] !== $user_id) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
         $verify_stmt->close();
         return;
+    }
+    $current_image_url = $row['image_url'] ?? '';
+    if (is_local_upload($current_image_url)) {
+        delete_local_upload($current_image_url);
     }
     $verify_stmt->close();
     

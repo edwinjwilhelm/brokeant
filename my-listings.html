@@ -499,6 +499,10 @@
           <input type="url" id="editImageUrl" placeholder="https://...">
         </div>
         <div class="form-group">
+          <label for="editImageFile">Upload new image (JPG/PNG, max 5MB)</label>
+          <input type="file" id="editImageFile" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+        </div>
+        <div class="form-group">
           <label for="editStatus">Status</label>
           <select id="editStatus" required>
             <option value="active">Active</option>
@@ -639,6 +643,8 @@ function editListing(id) {
   document.getElementById('editPrice').value = listing.price || '';
   document.getElementById('editCategory').value = listing.category || 'Other';
   document.getElementById('editImageUrl').value = listing.image_url || '';
+  const editImageFile = document.getElementById('editImageFile');
+  if (editImageFile) editImageFile.value = '';
   document.getElementById('editStatus').value = listing.status || 'active';
 
   document.getElementById('editModal').classList.add('active');
@@ -691,6 +697,10 @@ async function saveEdit(e) {
   formData.append('price', document.getElementById('editPrice').value.trim());
   formData.append('category', document.getElementById('editCategory').value);
   formData.append('image_url', document.getElementById('editImageUrl').value.trim());
+  const imageFile = document.getElementById('editImageFile');
+  if (imageFile && imageFile.files && imageFile.files[0]) {
+    formData.append('image_file', imageFile.files[0]);
+  }
   formData.append('status', document.getElementById('editStatus').value);
 
   const messageEl = document.getElementById('message');
