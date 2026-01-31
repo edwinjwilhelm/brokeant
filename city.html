@@ -325,6 +325,44 @@
       margin-top: 20px;
       font-size: 13px;
     }
+
+    .modal .contact textarea {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .modal .contact .btn-contact {
+      margin-top: 10px;
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .modal .contact .btn-contact:hover {
+      background: #5568d9;
+    }
+
+    .modal .contact .contact-note {
+      margin-top: 6px;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .modal .contact .contact-status {
+      margin-top: 8px;
+      color: #667eea;
+      font-size: 12px;
+    }
     
     .modal a {
       color: #133d60;
@@ -755,10 +793,9 @@
     });
     return filtered;
   }
-  function openModal(itemType, itemName, itemDesc, itemPrice, itemImage, itemEmail, itemId) {
+  function openModal(itemType, itemName, itemDesc, itemPrice, itemImage, itemSellerId, itemId) {
     const modalBody = document.getElementById('modalBody');
-    const user = getCurrentUser();
-    const isOwner = user && itemEmail && user.email === itemEmail;
+    const isOwner = currentUser && itemSellerId && currentUser.user_id === itemSellerId;
 
     const title = itemName || 'Item';
     const heading = itemType ? `${itemType}: ${title}` : title;
@@ -771,20 +808,19 @@
       priceHTML = isNaN(p) ? `<div class="price">${itemPrice}</div>` : `<div class="price">$${p.toFixed(2)}</div>`;
     }
 
-    let contactHTML = '';
-    if (itemEmail) {
-      contactHTML = `
+    const contactHTML = isOwner
+      ? `<div class="contact">
+        <strong>Verified Seller</strong>
+        <div class="contact-note">This is your listing.</div>
+      </div>`
+      : `
       <div class="contact">
-        <strong>Contact Seller:</strong><br>
-        <a href="mailto:${itemEmail}">${itemEmail}</a>
+        <strong>Verified Seller</strong>
+        <div class="contact-note">Use the form below to message the seller. Your email stays private.</div>
+        <textarea id="contactMessage" rows="4" placeholder="Write your message..."></textarea>
+        <button class="btn-contact" onclick="sendContactMessage(${itemId})">Send Message</button>
+        <div class="contact-status" id="contactStatus"></div>
       </div>`;
-    } else {
-      contactHTML = `
-      <div class="contact">
-        <strong>Contact:</strong><br>
-        Contact info unavailable
-      </div>`;
-    }
 
     let actionButtons = '';
     if (isOwner) {
@@ -808,22 +844,38 @@
     document.getElementById('detailModal').style.display = 'block';
   }
 
-    
-    modalBody.innerHTML = `
-      ${imageHTML}
-      <h1>${itemType}: ${itemName}</h1>
-      <p>${itemDesc || 'No description'}</p>
-      ${itemPrice ? `<div class="price">${itemPrice}</div>` : ''}
-      <div class="contact">
-        <strong>Contact Seller:</strong><br>
-        <a href="mailto:${itemEmail}">${itemEmail}</a>
-      </div>
-      ${actionButtons}
-    `;
-    
-    document.getElementById('detailModal').style.display = 'block';
+function sendContactMessage(listingId) {
+    const textarea = document.getElementById('contactMessage');
+    const statusEl = document.getElementById('contactStatus');
+    const message = textarea ? textarea.value.trim() : '';
+
+    if (!message) {
+      if (statusEl) statusEl.textContent = 'Please enter a message.';
+      return;
+    }
+
+    if (statusEl) statusEl.textContent = 'Sending...';
+
+    fetch('/backend/api/listings.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'contact_seller', listing_id: listingId, message: message })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.success) {
+        if (statusEl) statusEl.textContent = 'Message sent to seller.';
+        if (textarea) textarea.value = '';
+      } else {
+        if (statusEl) statusEl.textContent = (data && data.message) ? data.message : 'Send failed.';
+      }
+    })
+    .catch(() => {
+      if (statusEl) statusEl.textContent = 'Send failed.';
+    });
   }
-  
+
   function closeModal() {
     document.getElementById('detailModal').style.display = 'none';
   }
@@ -971,7 +1023,7 @@
     const desc = item.description || item.itemDesc || '';
     const price = item.price || item.itemPrice || '';
     const category = item.category || item.itemType || '';
-    const email = item.user_email || item.itemEmail || '';
+    const sellerId = item.user_id || item.userId || 0;
     const city = item.city || '';
 
     let imageHTML = '';
@@ -1003,7 +1055,7 @@
     if (isVerified) {
       itemBlock.style.cursor = 'pointer';
       itemBlock.addEventListener('click', function() {
-        openModal(category, title, desc, price, imageUrl, email, item.id || 0);
+        openModal(category, title, desc, price, imageUrl, sellerId, item.id || 0);
       });
     }
 

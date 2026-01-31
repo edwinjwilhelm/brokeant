@@ -137,8 +137,7 @@ function smtp_read($fp) {
     return trim($data);
 }
 
-function send_admin_alert($subject, $body) {
-    $to = getenv('ADMIN_ALERT_EMAIL') ?: 'sales@brokeant.com';
+function send_smtp_message($toEmail, $subject, $body) {
     $fromEmail = getenv('SMTP_FROM_EMAIL') ?: 'sales@brokeant.com';
     $fromName = getenv('SMTP_FROM_NAME') ?: 'BrokeAnt';
     $host = getenv('SMTP_HOST') ?: '';
@@ -148,10 +147,15 @@ function send_admin_alert($subject, $body) {
     $secure = getenv('SMTP_SECURE') ?: '';
 
     if ($host && $port && $user && $pass) {
-        smtp_send($host, $port, $user, $pass, $fromEmail, $fromName, $to, $subject, $body, $secure);
+        smtp_send($host, $port, $user, $pass, $fromEmail, $fromName, $toEmail, $subject, $body, $secure);
         return;
     }
 
     $headers = "From: {$fromName} <{$fromEmail}>\r\n";
-    @mail($to, $subject, $body, $headers);
+    @mail($toEmail, $subject, $body, $headers);
+}
+
+function send_admin_alert($subject, $body) {
+    $to = getenv('ADMIN_ALERT_EMAIL') ?: 'sales@brokeant.com';
+    send_smtp_message($to, $subject, $body);
 }

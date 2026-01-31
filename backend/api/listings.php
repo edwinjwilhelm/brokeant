@@ -93,6 +93,8 @@ if ($action === 'create') {
     get_user_listings($conn);
 } elseif ($action === 'get_single') {
     get_single_listing($conn);
+} elseif ($action === 'contact_seller') {
+    contact_seller($conn);
 } elseif ($action === 'update') {
     update_listing($conn);
 } elseif ($action === 'delete') {
@@ -220,7 +222,7 @@ function get_all_listings($conn) {
     $types = str_repeat('s', count($allowed_cities));
 
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
-                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score, u.email AS user_email
+                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.status = 'active' AND l.city IN ($placeholders)
@@ -290,7 +292,7 @@ function get_city_listings($conn) {
     }
 
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category,
-                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score, u.email AS user_email
+                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.status = 'active' AND l.city = ?
@@ -364,7 +366,7 @@ function get_single_listing($conn) {
     }
     
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
-                   l.image_url, l.city, l.posted_date, l.views, l.status, u.name, u.reputation_score, u.email AS user_email
+                   l.image_url, l.city, l.posted_date, l.views, l.status, u.name, u.reputation_score
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.id = ?";
@@ -395,6 +397,72 @@ function get_single_listing($conn) {
     }
     
     $stmt->close();
+}
+
+// Contact seller (email hidden)
+function contact_seller($conn) {
+    if (!is_logged_in()) {
+        echo json_encode(['success' => false, 'message' => 'Must be logged in']);
+        return;
+    }
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
+        return;
+    }
+
+    $raw = file_get_contents('php://input');
+    $json = json_decode($raw, true);
+    $listing_id = intval($json['listing_id'] ?? $_POST['listing_id'] ?? 0);
+    $message = trim($json['message'] ?? $_POST['message'] ?? '');
+
+    if ($listing_id <= 0 || $message === '') {
+        echo json_encode(['success' => false, 'message' => 'Listing and message required']);
+        return;
+    }
+    if (strlen($message) > 2000) {
+        echo json_encode(['success' => false, 'message' => 'Message too long']);
+        return;
+    }
+
+    $sql = "SELECT l.id, l.title, l.city, l.user_id, u.email AS seller_email
+            FROM listings l
+            JOIN users u ON l.user_id = u.id
+            WHERE l.id = ? AND l.status = 'active'";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param("i", $listing_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Listing not found']);
+        return;
+    }
+    $listing = $result->fetch_assoc();
+    $stmt->close();
+
+    $allowed_cities = get_allowed_cities($conn, get_user_id());
+    if (!in_array($listing['city'], $allowed_cities, true)) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        return;
+    }
+
+    $buyer_name = get_user_name() ?: 'A verified buyer';
+    $subject = "BrokeAnt buyer inquiry: {$listing['title']}";
+    $body = "You have a new message about your listing.\n\n"
+          . "Listing: {$listing['title']}\n"
+          . "City: {$listing['city']}\n"
+          . "Buyer: {$buyer_name}\n"
+          . "Message:\n{$message}\n\n"
+          . "Note: Buyer email is hidden by default.\n";
+
+    send_smtp_message($listing['seller_email'], $subject, $body);
+
+    echo json_encode(['success' => true, 'message' => 'Message sent']);
 }
 
 // UPDATE listing
