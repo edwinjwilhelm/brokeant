@@ -579,8 +579,7 @@
 <script>
 // Check if user is logged in
 function checkAuth() {
-  // Home should always be logged out
-  autoLogout();
+  checkUserSession();
   loadListings();
 }
 
@@ -614,33 +613,6 @@ function loadCities() {
       grid.innerHTML = '<div class="no-listings">Unable to load cities.</div>';
     });
 }
-function autoLogout() {
-  try {
-    localStorage.removeItem('brokeant_current_user');
-  } catch (e) {}
-
-  const formData = new FormData();
-  formData.append('action', 'logout');
-
-  fetch('/backend/api/users.php', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include'
-  })
-  .then(() => {
-    const userSection = document.getElementById('userSection');
-    if (userSection) {
-      userSection.classList.remove('active');
-    }
-  })
-  .catch(() => {
-    const userSection = document.getElementById('userSection');
-    if (userSection) {
-      userSection.classList.remove('active');
-    }
-  });
-}
-
 // Check user session
 function checkUserSession() {
   fetch('/backend/api/users.php?action=check_session', {
