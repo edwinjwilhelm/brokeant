@@ -220,7 +220,7 @@ function get_all_listings($conn) {
     $types = str_repeat('s', count($allowed_cities));
 
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
-                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score
+                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score, u.email AS user_email
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.status = 'active' AND l.city IN ($placeholders)
@@ -290,7 +290,7 @@ function get_city_listings($conn) {
     }
 
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category,
-                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score
+                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score, u.email AS user_email
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.status = 'active' AND l.city = ?
@@ -364,7 +364,7 @@ function get_single_listing($conn) {
     }
     
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
-                   l.image_url, l.city, l.posted_date, l.views, l.status, u.name, u.reputation_score
+                   l.image_url, l.city, l.posted_date, l.views, l.status, u.name, u.reputation_score, u.email AS user_email
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.id = ?";
