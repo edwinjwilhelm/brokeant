@@ -505,31 +505,12 @@
     </div>
   </div>
   
-  <div class="cities-grid">
-    <a href="melville/index.html" class="city-card" target="_blank">
-      <div class="city-icon">🏘️</div>
-      <h2>Melville</h2>
-      <p>Browse and post items in your community</p>
-      <button class="btn">Enter Marketplace</button>
-    </a>
-    
-    <a href="yorkton/index.html" class="city-card" target="_blank">
-      <div class="city-icon">🏢</div>
-      <h2>Yorkton</h2>
-      <p>Browse and post items in your community</p>
-      <button class="btn">Enter Marketplace</button>
-    </a>
-    
-    <a href="regina/index.html" class="city-card" target="_blank">
-      <div class="city-icon">🌆</div>
-      <h2>Regina</h2>
-      <p>Browse and post items in your community</p>
-      <button class="btn">Enter Marketplace</button>
-    </a>
+  <div class="cities-grid" id="citiesGrid">
+    <div class="no-listings">Loading cities...</div>
   </div>
   
   <div class="listings-section">
-    <h2>📦 Latest Listings</h2>
+    <h2>Latest Listings</h2>
     <div class="listings-grid" id="listingsGrid">
       <div class="no-listings">Loading listings...</div>
     </div>
@@ -549,6 +530,36 @@ function checkAuth() {
 }
 
 // Auto-logout on homepage to avoid stale sessions
+function loadCities() {
+  const grid = document.getElementById('citiesGrid');
+  if (!grid) return;
+
+  fetch('/backend/api/cities.php?action=list')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success || !data.cities || data.cities.length === 0) {
+        grid.innerHTML = '<div class="no-listings">No cities available yet.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      data.cities.forEach(city => {
+        const name = city.name || city;
+        const href = `/city.html?city=${encodeURIComponent(name)}`;
+        grid.innerHTML += `
+          <a href="${href}" class="city-card" target="_blank">
+            <div class="city-icon">City</div>
+            <h2>${name}</h2>
+            <p>Browse and post items in your community</p>
+            <button class="btn">Enter Marketplace</button>
+          </a>
+        `;
+      });
+    })
+    .catch(() => {
+      grid.innerHTML = '<div class="no-listings">Unable to load cities.</div>';
+    });
+}
 function autoLogout() {
   try {
     localStorage.removeItem('brokeant_current_user');
@@ -645,6 +656,7 @@ function logout() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', checkAuth);
+loadCities();
 </script>
 
 <script>
@@ -691,3 +703,6 @@ function closeWelcomeModal(e) {
 
 </body>
 </html>
+
+
+

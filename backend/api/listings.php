@@ -85,6 +85,8 @@ if ($action === 'create') {
     get_all_listings($conn);
 } elseif ($action === 'get_public_images') {
     get_public_images($conn);
+} elseif ($action === 'get_city') {
+    get_city_listings($conn);
 } elseif ($action === 'get_user_listings') {
     get_user_listings($conn);
 } elseif ($action === 'get_single') {
@@ -228,8 +230,20 @@ function get_all_listings($conn) {
 
 // GET public images (all cities, no details)
 function get_public_images($conn) {
-    $sql = "SELECT id, image_url FROM listings WHERE status = 'active' AND image_url <> '' ORDER BY posted_date DESC LIMIT 100";
-    $result = $conn->query($sql);
+    $city = trim($_GET['city'] ?? $_POST['city'] ?? '');
+
+    if ($city !== '') {
+        $stmt = $conn->prepare("SELECT id, image_url, city FROM listings WHERE status = 'active' AND image_url <> '' AND city = ? ORDER BY posted_date DESC LIMIT 100");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error']);
+            return;
+        }
+        $stmt->bind_param("s", $city);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    } else {
+        $result = $conn->query("SELECT id, image_url, city FROM listings WHERE status = 'active' AND image_url <> '' ORDER BY posted_date DESC LIMIT 100");
+    }
 
     if ($result) {
         $listings = [];
@@ -240,6 +254,53 @@ function get_public_images($conn) {
     } else {
         echo json_encode(['success' => false, 'message' => 'Database error']);
     }
+}
+
+// GET listings for a specific city (paid users only)
+function get_city_listings($conn) {
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
+        return;
+    }
+
+    $city = trim($_GET['city'] ?? $_POST['city'] ?? '');
+    if ($city === '') {
+        echo json_encode(['success' => true, 'listings' => []]);
+        return;
+    }
+
+    $user_id = get_user_id();
+    $allowed_cities = get_allowed_cities($conn, $user_id);
+    if (empty($allowed_cities) || !in_array($city, $allowed_cities, true)) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        return;
+    }
+
+    $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category,
+                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score
+            FROM listings l
+            JOIN users u ON l.user_id = u.id
+            WHERE l.status = 'active' AND l.city = ?
+            ORDER BY l.posted_date DESC LIMIT 100";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+
+    $stmt->bind_param("s", $city);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $listings = [];
+    while ($row = $result->fetch_assoc()) {
+        $listings[] = $row;
+    }
+
+    echo json_encode(['success' => true, 'listings' => $listings]);
+    $stmt->close();
 }
 
 // GET user's own listings

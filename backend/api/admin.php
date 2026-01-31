@@ -433,6 +433,15 @@ function get_city_access_admin($conn) {
     echo json_encode(['success' => true, 'rows' => $rows]);
 }
 
+function ensure_city($conn, $city) {
+    $stmt = $conn->prepare("INSERT IGNORE INTO cities (name, active) VALUES (?, 1)");
+    if ($stmt) {
+        $stmt->bind_param("s", $city);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
 function approve_city($conn) {
     $json = getJsonBody();
     $id = intval($json['id'] ?? 0);
@@ -446,6 +455,16 @@ function approve_city($conn) {
     $stmt = $conn->prepare("UPDATE user_city_access SET status = 'approved' WHERE id = ?");
     $stmt->bind_param("i", $id);
     if ($stmt->execute()) {
+        $city_stmt = $conn->prepare("SELECT city FROM user_city_access WHERE id = ?");
+        if ($city_stmt) {
+            $city_stmt->bind_param("i", $id);
+            $city_stmt->execute();
+            $row = $city_stmt->get_result()->fetch_assoc();
+            if ($row && !empty($row['city'])) {
+                ensure_city($conn, $row['city']);
+            }
+            $city_stmt->close();
+        }
         echo json_encode(['success' => true, 'message' => 'Approved']);
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
@@ -496,6 +515,7 @@ function add_city_access($conn) {
     $stmt = $conn->prepare("INSERT IGNORE INTO user_city_access (user_id, city, status) VALUES (?, ?, 'approved')");
     $stmt->bind_param("is", $user_id, $city);
     if ($stmt->execute()) {
+        ensure_city($conn, $city);
         echo json_encode(['success' => true, 'message' => 'City added']);
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
