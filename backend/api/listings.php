@@ -3,7 +3,9 @@ session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/.env.loader.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../lib/smtp_mailer.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
@@ -183,7 +185,6 @@ function create_listing($conn) {
     if ($stmt->execute()) {
         $listing_id = $stmt->insert_id;
         // Email alert to admin (best-effort)
-        $to = 'sales@brokeant.com';
         $subject = 'New listing pending approval';
         $body = "A new listing is pending approval.\n\n"
               . "ID: {$listing_id}\n"
@@ -191,8 +192,7 @@ function create_listing($conn) {
               . "Title: {$title}\n"
               . "City: {$city}\n"
               . "Price: " . ($price !== NULL ? $price : 'N/A') . "\n";
-        $headers = "From: BrokeAnt <no-reply@brokeant.com>\r\n";
-        @mail($to, $subject, $body, $headers);
+        send_admin_alert($subject, $body);
         echo json_encode(['success' => true, 'message' => 'Listing created!', 'listing_id' => $listing_id]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to create listing']);
