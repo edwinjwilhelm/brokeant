@@ -31,6 +31,12 @@ function register($conn) {
     $name = $conn->real_escape_string($_POST['name'] ?? '');
     $city = $conn->real_escape_string($_POST['city'] ?? '');
     $phone = $conn->real_escape_string($_POST['phone'] ?? '');
+    $honeypot = trim($_POST['website'] ?? '');
+
+    if ($honeypot !== '') {
+        echo json_encode(['success' => false, 'message' => 'Registration failed']);
+        return;
+    }
     
     // Validate input
     if (empty($email) || empty($password) || empty($name) || empty($city)) {

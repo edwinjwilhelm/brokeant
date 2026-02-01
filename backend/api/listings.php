@@ -116,8 +116,56 @@ function handle_image_upload($field) {
     $name = 'listing_' . get_user_id() . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $allowed[$mime];
     $dest = $uploadDir . '/' . $name;
 
-    if (!move_uploaded_file($file['tmp_name'], $dest)) {
-        return ['url' => null, 'error' => 'Failed to save image'];
+    $processed = false;
+    if (function_exists('imagecreatetruecolor')) {
+        $info = @getimagesize($file['tmp_name']);
+        if ($info !== false) {
+            $width = (int)$info[0];
+            $height = (int)$info[1];
+            $maxDim = 1400;
+            $scale = 1.0;
+            if ($width > 0 && $height > 0) {
+                $scale = min(1.0, $maxDim / max($width, $height));
+            }
+            $newW = (int)round($width * $scale);
+            $newH = (int)round($height * $scale);
+
+            $src = null;
+            if ($mime === 'image/jpeg' && function_exists('imagecreatefromjpeg')) {
+                $src = @imagecreatefromjpeg($file['tmp_name']);
+            } elseif ($mime === 'image/png' && function_exists('imagecreatefrompng')) {
+                $src = @imagecreatefrompng($file['tmp_name']);
+            }
+
+            if ($src) {
+                $dst = $src;
+                if ($newW > 0 && $newH > 0 && ($newW !== $width || $newH !== $height)) {
+                    $dst = imagecreatetruecolor($newW, $newH);
+                    if ($mime === 'image/png') {
+                        imagealphablending($dst, false);
+                        imagesavealpha($dst, true);
+                    }
+                    imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $width, $height);
+                }
+
+                if ($mime === 'image/jpeg' && function_exists('imagejpeg')) {
+                    $processed = imagejpeg($dst, $dest, 82);
+                } elseif ($mime === 'image/png' && function_exists('imagepng')) {
+                    $processed = imagepng($dst, $dest, 6);
+                }
+
+                if ($dst !== $src) {
+                    imagedestroy($dst);
+                }
+                imagedestroy($src);
+            }
+        }
+    }
+
+    if (!$processed) {
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            return ['url' => null, 'error' => 'Failed to save image'];
+        }
     }
 
     return ['url' => '/uploads/' . $name, 'error' => null];
@@ -172,6 +220,12 @@ function create_listing($conn) {
     if (!is_payment_verified()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Payment verification required. Please complete your payment first.', 'redirect' => '/payment-checkout.html']);
+        return;
+    }
+
+    $honeypot = trim($_POST['website'] ?? '');
+    if ($honeypot !== '') {
+        echo json_encode(['success' => false, 'message' => 'Invalid submission']);
         return;
     }
 
