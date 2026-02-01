@@ -20,6 +20,47 @@ function getJsonBody() {
     return $jsonBody;
 }
 
+function is_local_upload($url) {
+    return is_string($url) && strpos($url, '/uploads/') === 0;
+}
+
+function delete_local_upload($url) {
+    if (!is_local_upload($url)) {
+        return;
+    }
+    $root = dirname(__DIR__, 2);
+    $path = $root . $url;
+    if (is_file($path)) {
+        @unlink($path);
+    }
+}
+
+function delete_listing_with_image($conn, $listing_id) {
+    $listing_id = intval($listing_id);
+    if ($listing_id <= 0) return false;
+
+    $stmt = $conn->prepare("SELECT image_url FROM listings WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $listing_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $res->num_rows > 0) {
+            $row = $res->fetch_assoc();
+            if (!empty($row['image_url'])) {
+                delete_local_upload($row['image_url']);
+            }
+        }
+        $stmt->close();
+    }
+
+    $stmt = $conn->prepare("DELETE FROM listings WHERE id = ?");
+    if (!$stmt) return false;
+    $stmt->bind_param("i", $listing_id);
+    $ok = $stmt->execute();
+    $stmt->close();
+    return $ok;
+}
+
 
 // Admin credentials (from .env)
 define('ADMIN_EMAIL', getenv('ADMIN_EMAIL') ?: '');
@@ -59,6 +100,8 @@ if ($action === 'admin_login') {
     remove_listing_image($conn);
 } elseif ($action === 'delete_listing' && verifyToken($token)) {
     delete_listing($conn);
+} elseif ($action === 'bulk_update_listings' && verifyToken($token)) {
+    bulk_update_listings($conn);
 } elseif ($action === 'get_payments' && verifyToken($token)) {
     get_payments($conn);
 } else {
@@ -350,12 +393,45 @@ function delete_user($conn) {
 
 // Get all listings
 function get_listings($conn) {
-    $result = $conn->query("
-        SELECT l.id, l.title, l.price, l.city, l.image_url, l.status, l.posted_date AS created_at, u.name as user_name, u.email as user_email
-        FROM listings l
-        JOIN users u ON l.user_id = u.id
-        ORDER BY l.posted_date DESC
-    ");
+    $json = getJsonBody();
+    $status = $json['status'] ?? $_POST['status'] ?? $_GET['status'] ?? null;
+    $statuses = [];
+
+    if (is_array($status)) {
+        $statuses = $status;
+    } elseif (is_string($status) && $status !== '') {
+        $statuses = array_map('trim', explode(',', $status));
+    }
+
+    $statuses = array_values(array_filter($statuses, function($s) {
+        return preg_match('/^[a-z_]+$/i', $s);
+    }));
+
+    if (!empty($statuses)) {
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        $types = str_repeat('s', count($statuses));
+        $stmt = $conn->prepare("
+            SELECT l.id, l.title, l.price, l.city, l.image_url, l.status, l.posted_date AS created_at, u.name as user_name, u.email as user_email
+            FROM listings l
+            JOIN users u ON l.user_id = u.id
+            WHERE l.status IN ($placeholders)
+            ORDER BY l.posted_date DESC
+        ");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'error' => 'Database error']);
+            return;
+        }
+        $stmt->bind_param($types, ...$statuses);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    } else {
+        $result = $conn->query("
+            SELECT l.id, l.title, l.price, l.city, l.image_url, l.status, l.posted_date AS created_at, u.name as user_name, u.email as user_email
+            FROM listings l
+            JOIN users u ON l.user_id = u.id
+            ORDER BY l.posted_date DESC
+        ");
+    }
     
     $listings = [];
     while ($row = $result->fetch_assoc()) {
@@ -369,14 +445,11 @@ function get_listings($conn) {
 function delete_listing($conn) {
     $json = getJsonBody();
     $listing_id = intval($json['listing_id'] ?? 0);
-    
-    $stmt = $conn->prepare("DELETE FROM listings WHERE id = ?");
-    $stmt->bind_param("i", $listing_id);
-    
-    if ($stmt->execute()) {
+
+    if (delete_listing_with_image($conn, $listing_id)) {
         echo json_encode(['success' => true, 'message' => 'Listing deleted']);
     } else {
-        echo json_encode(['success' => false, 'error' => $stmt->error]);
+        echo json_encode(['success' => false, 'error' => 'Delete failed']);
     }
 }
 
@@ -416,6 +489,61 @@ function approve_listing($conn) {
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
     }
+}
+
+// Bulk update listings (approve/reject/delete)
+function bulk_update_listings($conn) {
+    $json = getJsonBody();
+    $ids = $json['ids'] ?? [];
+    $bulk_action = $json['bulk_action'] ?? '';
+
+    if (!is_array($ids) || empty($ids)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'No listings selected']);
+        return;
+    }
+
+    $ids = array_values(array_filter(array_map('intval', $ids), function($id) {
+        return $id > 0;
+    }));
+    if (empty($ids)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid listing ids']);
+        return;
+    }
+
+    if ($bulk_action === 'approve') {
+        $new_status = 'active';
+    } elseif ($bulk_action === 'reject') {
+        $new_status = 'removed';
+    } elseif ($bulk_action === 'delete') {
+        $ok = true;
+        foreach ($ids as $id) {
+            $ok = $ok && delete_listing_with_image($conn, $id);
+        }
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Listings deleted' : 'Some deletes failed']);
+        return;
+    } else {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid bulk action']);
+        return;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $types = 's' . str_repeat('i', count($ids));
+    $sql = "UPDATE listings SET status = ? WHERE id IN ($placeholders)";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'error' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param($types, $new_status, ...$ids);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Listings updated']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+    $stmt->close();
 }
 
 // Remove listing image

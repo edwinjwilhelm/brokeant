@@ -545,12 +545,43 @@
             color: #383d41;
         }
 
+        .badge-flagged {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-removed {
+            background: #e2e3e5;
+            color: #6c757d;
+        }
+
+        .badge-expired {
+            background: #e2e3e5;
+            color: #6c757d;
+        }
+
         .listing-thumb {
             width: 60px;
             height: 60px;
             object-fit: cover;
             border-radius: 6px;
             border: 1px solid #eee;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 10px 0 15px;
+            flex-wrap: wrap;
+        }
+
+        .bulk-actions label {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .badge-pending {
@@ -1036,6 +1067,7 @@
 
 
             <button class="tab" onclick="switchTab('listings')">📋 Listings</button>
+            <button class="tab" onclick="switchTab('spam')">🧹 Spam Queue</button>
 
 
             <button class="tab" onclick="switchTab('payments')">💰 Payments</button>
@@ -1082,10 +1114,26 @@
 
                 <h2>Listings Management</h2>
 
-
+                <div class="bulk-actions">
+                    <label><input type="checkbox" id="selectAllListings" onchange="toggleAllListings(this)"> Select all</label>
+                    <button class="action-btn btn-verify" onclick="bulkListings('approve','listingsTable')">Approve Selected</button>
+                    <button class="action-btn btn-delete" onclick="bulkListings('reject','listingsTable')">Reject Selected</button>
+                    <button class="action-btn btn-delete" onclick="bulkListings('delete','listingsTable')">Delete Selected</button>
+                </div>
                 <div id="listingsTable" class="loading">Loading listings...</div>
 
 
+            </div>
+
+            <div id="spam" class="tab-content">
+                <h2>Spam Queue</h2>
+                <div class="bulk-actions">
+                    <label><input type="checkbox" id="selectAllSpam" onchange="toggleAllSpam(this)"> Select all</label>
+                    <button class="action-btn btn-verify" onclick="bulkListings('approve','spamTable')">Approve Selected</button>
+                    <button class="action-btn btn-delete" onclick="bulkListings('reject','spamTable')">Reject Selected</button>
+                    <button class="action-btn btn-delete" onclick="bulkListings('delete','spamTable')">Delete Selected</button>
+                </div>
+                <div id="spamTable" class="loading">Loading flagged listings...</div>
             </div>
 
 
@@ -1595,7 +1643,7 @@
                     },
 
 
-                    body: JSON.stringify({ action: 'get_listings' })
+                    body: JSON.stringify({ action: 'get_listings', status: ['pending','active','sold','removed','expired'] })
 
 
                 });
@@ -1626,10 +1674,28 @@
 
 
         }
+
+        async function loadSpamQueue() {
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'get_listings', status: ['flagged'] })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    displaySpamTable(data.listings);
+                }
+            } catch (error) {
+                console.error('Error loading spam queue:', error);
+            }
+        }
         function displayListingsTable(listings) {
-
-
-            let html = '<table><thead><tr><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Select</th><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
 
 
             listings.forEach(listing => {
@@ -1641,8 +1707,7 @@
                     : '<span style="color:#999;">-</span>';
 
                 html += `<tr>
-
-
+                    <td><input type="checkbox" data-id="${listing.id}"></td>
                     <td>${listing.title}</td>
 
 
@@ -1691,6 +1756,91 @@
             document.getElementById('listingsTable').innerHTML = html;
 
 
+        }
+
+        function displaySpamTable(listings) {
+            let html = '<table><thead><tr><th>Select</th><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+
+            listings.forEach(listing => {
+                const hasImage = listing.image_url && listing.image_url.trim() !== '';
+                const imageCell = hasImage
+                    ? `<a href="${listing.image_url}" target="_blank" rel="noopener"><img class="listing-thumb" src="${listing.image_url}" alt="Listing image"></a>`
+                    : '<span style="color:#999;">-</span>';
+
+                html += `<tr>
+                    <td><input type="checkbox" data-id="${listing.id}"></td>
+                    <td>${listing.title}</td>
+                    <td>${listing.user_name}</td>
+                    <td>${listing.city}</td>
+                    <td>$${listing.price || 'N/A'}</td>
+                    <td>${imageCell}</td>
+                    <td><span class="badge badge-${listing.status}">${listing.status}</span></td>
+                    <td>${new Date(listing.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button class="action-btn btn-verify" onclick="approveListing(${listing.id})">Approve</button>
+                        <button class="action-btn btn-delete" onclick="rejectListing(${listing.id})">Reject</button>
+                        <button class="action-btn btn-delete" onclick="deleteListing(${listing.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('spamTable').innerHTML = html;
+        }
+
+        function getSelectedListingIds(tableId) {
+            const container = document.getElementById(tableId);
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('input[type="checkbox"][data-id]:checked'))
+                .map(cb => parseInt(cb.getAttribute('data-id'), 10))
+                .filter(id => Number.isInteger(id));
+        }
+
+        function toggleAllListings(checkbox) {
+            document.querySelectorAll('#listingsTable input[type="checkbox"][data-id]').forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+        }
+
+        function toggleAllSpam(checkbox) {
+            document.querySelectorAll('#spamTable input[type="checkbox"][data-id]').forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+        }
+
+        async function bulkListings(action, tableId) {
+            const ids = getSelectedListingIds(tableId);
+            if (!ids.length) {
+                alert('Select at least one listing.');
+                return;
+            }
+            if (action === 'delete' && !confirm('Delete selected listings?')) {
+                return;
+            }
+            if (action === 'reject' && !confirm('Reject selected listings?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'bulk_update_listings', bulk_action: action, ids: ids })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.error || 'Bulk action failed');
+                    return;
+                }
+                loadListings();
+                loadSpamQueue();
+                alert(data.message || 'Bulk action complete');
+            } catch (err) {
+                alert('Bulk action failed.');
+            }
         }
 
 
@@ -1939,8 +2089,7 @@
 
 
             if (tabName === 'listings') loadListings();
-
-
+            else if (tabName === 'spam') loadSpamQueue();
             else if (tabName === 'payments') loadPayments();
             else if (tabName === 'cities') loadCityAccess();
 
@@ -2274,8 +2423,36 @@
                 if (data.success) {
                     alert('Listing approved');
                     loadListings();
+                    loadSpamQueue();
                 } else {
                     alert('Error: ' + (data.error || 'Approval failed'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function rejectListing(listingId) {
+            if (!confirm('Reject this listing?')) {
+                return;
+            }
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'bulk_update_listings', bulk_action: 'reject', ids: [listingId] })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Listing rejected');
+                    loadListings();
+                    loadSpamQueue();
+                } else {
+                    alert('Error: ' + (data.error || 'Reject failed'));
                 }
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -2343,6 +2520,7 @@
 
 
                     loadListings();
+                    loadSpamQueue();
 
 
                     loadStats();

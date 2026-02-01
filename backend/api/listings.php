@@ -80,6 +80,26 @@ function contains_profanity($text) {
     return false;
 }
 
+function count_links($text) {
+    if ($text === '') {
+        return 0;
+    }
+    $count = 0;
+    if (preg_match_all('/https?:\/\/|www\./i', $text, $m)) {
+        $count = count($m[0]);
+    }
+    return $count;
+}
+
+function should_flag_listing($title, $description, $duplicate_flag) {
+    $short_desc = strlen(trim($description)) < 15;
+    $link_count = count_links($title . ' ' . $description);
+    $too_many_links = $link_count >= 2;
+    $has_profanity = contains_profanity($title . ' ' . $description);
+
+    return ($duplicate_flag || $short_desc || $too_many_links || $has_profanity);
+}
+
 
 function is_local_upload($url) {
     return is_string($url) && strpos($url, '/uploads/') === 0;
@@ -270,11 +290,6 @@ function create_listing($conn) {
         return;
     }
 
-    if (contains_profanity($title . ' ' . $description)) {
-        echo json_encode(['success' => false, 'message' => 'Listing contains prohibited language. Please edit and try again.']);
-        return;
-    }
-
     $price = $price ? floatval($price) : NULL;
     $expiration = date('Y-m-d H:i:s', strtotime('+30 days'));
 
@@ -288,6 +303,7 @@ function create_listing($conn) {
                   AND (price <=> ?)
                   AND posted_date >= (NOW() - INTERVAL 7 DAY)
                 LIMIT 1";
+    $duplicate_flag = false;
     $dup_stmt = $conn->prepare($dup_sql);
     if ($dup_stmt) {
         $dup_stmt->bind_param("isssd", $user_id, $title, $description, $city, $price);
@@ -295,10 +311,10 @@ function create_listing($conn) {
         $dup_result = $dup_stmt->get_result();
         if ($dup_result && $dup_result->num_rows > 0) {
             $dup_stmt->close();
-            echo json_encode(['success' => false, 'message' => 'Duplicate listing detected (same title/description/price in last 7 days).']);
-            return;
+            $duplicate_flag = true;
+        } else {
+            $dup_stmt->close();
         }
-        $dup_stmt->close();
     }
 
     $upload = handle_image_upload('image_file');
@@ -310,7 +326,8 @@ function create_listing($conn) {
         $image_url = $upload['url'];
     }
 
-    $status = 'pending';
+    $flagged = should_flag_listing($title, $description, $duplicate_flag);
+    $status = $flagged ? 'flagged' : 'pending';
     $sql = "INSERT INTO listings (user_id, title, description, price, category, image_url, city, expiration_date, status) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);

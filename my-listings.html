@@ -169,6 +169,11 @@
       background: #e2e3e5;
       color: #383d41;
     }
+
+    .status-flagged {
+      background: #f8d7da;
+      color: #721c24;
+    }
     
     .listing-actions {
       display: flex;
@@ -638,7 +643,11 @@ function loadListings() {
               <span class="listing-status ${
                 listing.status === 'active'
                   ? 'status-active'
-                  : (listing.status === 'pending' ? 'status-pending' : 'status-sold')
+                  : (listing.status === 'pending'
+                      ? 'status-pending'
+                      : (listing.status === 'flagged'
+                          ? 'status-flagged'
+                          : 'status-sold'))
               }">
                 ${listing.status.toUpperCase()}
               </span>
