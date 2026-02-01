@@ -7,7 +7,23 @@ require_once __DIR__ . '/../config/.env.loader.php';
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../lib/smtp_mailer.php';
 
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+// Cache JSON body (read once)
+$jsonBody = [];
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+if (stripos($contentType, 'application/json') !== false) {
+    $rawBody = file_get_contents('php://input');
+    $decoded = json_decode($rawBody, true);
+    if (is_array($decoded)) {
+        $jsonBody = $decoded;
+    }
+}
+
+function get_json_body() {
+    global $jsonBody;
+    return $jsonBody;
+}
+
+$action = $_POST['action'] ?? $_GET['action'] ?? ($jsonBody['action'] ?? '');
 
 function load_badwords() {
     static $words = null;
@@ -540,8 +556,7 @@ function contact_seller($conn) {
         return;
     }
 
-    $raw = file_get_contents('php://input');
-    $json = json_decode($raw, true);
+    $json = get_json_body();
     $listing_id = intval($json['listing_id'] ?? $_POST['listing_id'] ?? 0);
     $message = trim($json['message'] ?? $_POST['message'] ?? '');
     $share_email = filter_var($json['share_email'] ?? $_POST['share_email'] ?? false, FILTER_VALIDATE_BOOLEAN);
