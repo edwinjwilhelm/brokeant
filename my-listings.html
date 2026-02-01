@@ -80,6 +80,21 @@
     .logout-btn:hover {
       background: #c9302c;
     }
+
+    .btn-danger {
+      background: #b02a37;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: background 0.3s;
+    }
+
+    .btn-danger:hover {
+      background: #8f1f2a;
+    }
     
     .listings-grid {
       display: grid;
@@ -464,6 +479,7 @@
     <h1>📋 My Listings</h1>
     <div>
       <button class="btn-post" onclick="window.location.href='/post-listing.html'">+ Post New Item</button>
+      <button class="btn-danger" onclick="openDeleteAccountModal()">Delete Account</button>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -516,7 +532,7 @@
           <input type="url" id="editImageUrl" placeholder="https://...">
         </div>
         <div class="form-group">
-          <label for="editImageFile">Upload new image (JPG/PNG, max 5MB)</label>
+          <label for="editImageFile">Upload new image (JPG/PNG, max 25MB)</label>
           <input type="file" id="editImageFile" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
         </div>
         <div class="form-group">
@@ -541,6 +557,31 @@
         <button class="modal-close" onclick="closeViewModal()" aria-label="Close">&times;</button>
       </div>
       <div id="viewModalBody"></div>
+    </div>
+  </div>
+
+  <div id="deleteAccountModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Delete Account</h3>
+        <button class="modal-close" onclick="closeDeleteAccountModal()" aria-label="Close">&times;</button>
+      </div>
+      <p style="color:#721c24; font-size:13px; margin-bottom:10px;">
+        This will permanently delete your account, listings, and city access. This cannot be undone.
+      </p>
+      <div class="form-group">
+        <label for="deletePassword">Password</label>
+        <input type="password" id="deletePassword" autocomplete="current-password">
+      </div>
+      <div class="form-group">
+        <label for="deleteConfirm">Type DELETE to confirm</label>
+        <input type="text" id="deleteConfirm" placeholder="DELETE">
+      </div>
+      <div id="deleteAccountStatus" class="message"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeDeleteAccountModal()">Cancel</button>
+        <button type="button" class="btn-delete" onclick="confirmDeleteAccount()">Delete Account</button>
+      </div>
     </div>
   </div>
 
@@ -756,6 +797,67 @@ function logout() {
   .then(() => {
     window.location.href = '/login.html';
   });
+}
+
+function openDeleteAccountModal() {
+  const modal = document.getElementById('deleteAccountModal');
+  const statusEl = document.getElementById('deleteAccountStatus');
+  document.getElementById('deletePassword').value = '';
+  document.getElementById('deleteConfirm').value = '';
+  if (statusEl) {
+    statusEl.className = 'message';
+    statusEl.textContent = '';
+    statusEl.style.display = 'none';
+  }
+  modal.classList.add('active');
+}
+
+function closeDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').classList.remove('active');
+}
+
+async function confirmDeleteAccount() {
+  const password = document.getElementById('deletePassword').value;
+  const confirmText = document.getElementById('deleteConfirm').value.trim();
+  const statusEl = document.getElementById('deleteAccountStatus');
+
+  if (!password) {
+    statusEl.className = 'message error';
+    statusEl.textContent = 'Password required.';
+    return;
+  }
+  if (confirmText !== 'DELETE') {
+    statusEl.className = 'message error';
+    statusEl.textContent = 'Please type DELETE to confirm.';
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('action', 'delete_self');
+  formData.append('password', password);
+  formData.append('confirm', confirmText);
+
+  try {
+    const response = await fetch('/backend/api/users.php', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+    const data = await response.json();
+    if (data.success) {
+      statusEl.className = 'message success';
+      statusEl.textContent = 'Account deleted. Redirecting...';
+      setTimeout(() => {
+        window.location.href = '/index.html';
+      }, 1200);
+    } else {
+      statusEl.className = 'message error';
+      statusEl.textContent = data.message || 'Delete failed.';
+    }
+  } catch (err) {
+    statusEl.className = 'message error';
+    statusEl.textContent = 'Delete failed. Please try again.';
+  }
 }
 
 // Initialize

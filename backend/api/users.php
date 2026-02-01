@@ -13,6 +13,8 @@ if ($action === 'register') {
     login($conn);
 } elseif ($action === 'logout') {
     logout();
+} elseif ($action === 'delete_self') {
+    delete_self($conn);
 } elseif ($action === 'check_session') {
     check_session();
 } elseif ($action === 'check_payment') {
@@ -155,6 +157,123 @@ function login($conn) {
 function logout() {
     session_destroy();
     echo json_encode(['success' => true, 'message' => 'Logged out']);
+}
+
+function is_local_upload($url) {
+    return is_string($url) && strpos($url, '/uploads/') === 0;
+}
+
+function delete_local_upload($url) {
+    if (!is_local_upload($url)) return;
+    $root = dirname(__DIR__, 2);
+    $path = $root . $url;
+    if (is_file($path)) {
+        @unlink($path);
+    }
+}
+
+function delete_self($conn) {
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        return;
+    }
+
+    $password = $_POST['password'] ?? '';
+    $confirm = trim($_POST['confirm'] ?? '');
+    if ($confirm !== 'DELETE') {
+        echo json_encode(['success' => false, 'message' => 'Please type DELETE to confirm']);
+        return;
+    }
+    if ($password === '') {
+        echo json_encode(['success' => false, 'message' => 'Password required']);
+        return;
+    }
+
+    $user_id = intval($_SESSION['user_id']);
+
+    $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+        return;
+    }
+    $row = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!password_verify($password, $row['password_hash'])) {
+        echo json_encode(['success' => false, 'message' => 'Incorrect password']);
+        return;
+    }
+
+    $images = [];
+    $stmt = $conn->prepare("SELECT image_url FROM listings WHERE user_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) {
+            if (!empty($r['image_url'])) {
+                $images[] = $r['image_url'];
+            }
+        }
+        $stmt->close();
+    }
+
+    $ok = true;
+    $stmt = $conn->prepare("DELETE FROM listings WHERE user_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $ok = $stmt->execute();
+        $stmt->close();
+    } else {
+        $ok = false;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM user_city_access WHERE user_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $ok = $ok && $stmt->execute();
+        $stmt->close();
+    } else {
+        $ok = false;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM payments WHERE user_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $ok = $ok && $stmt->execute();
+        $stmt->close();
+    } else {
+        $ok = false;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $ok = $ok && $stmt->execute();
+        $stmt->close();
+    } else {
+        $ok = false;
+    }
+
+    if (!$ok) {
+        echo json_encode(['success' => false, 'message' => 'Failed to delete account']);
+        return;
+    }
+
+    foreach ($images as $url) {
+        delete_local_upload($url);
+    }
+
+    session_destroy();
+    echo json_encode(['success' => true, 'message' => 'Account deleted']);
 }
 
 function check_session() {
