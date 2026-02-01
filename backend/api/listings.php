@@ -90,9 +90,9 @@ function handle_image_upload($field) {
         return ['url' => null, 'error' => 'Image upload failed'];
     }
 
-    $maxSize = 5 * 1024 * 1024; // 5MB
+    $maxSize = 10 * 1024 * 1024; // 10MB
     if ($file['size'] > $maxSize) {
-        return ['url' => null, 'error' => 'Image too large (max 5MB)'];
+        return ['url' => null, 'error' => 'Image too large (max 10MB)'];
     }
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
