@@ -1695,7 +1695,7 @@
             }
         }
         function displayListingsTable(listings) {
-            let html = '<table><thead><tr><th>Select</th><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Select</th><th>Title</th><th>User</th><th>Email</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
 
 
             listings.forEach(listing => {
@@ -1712,8 +1712,7 @@
 
 
                     <td>${listing.user_name}</td>
-
-
+                    <td>${listing.user_email || ''}</td>
                     <td>${listing.city}</td>
 
 
@@ -1759,7 +1758,7 @@
         }
 
         function displaySpamTable(listings) {
-            let html = '<table><thead><tr><th>Select</th><th>Title</th><th>User</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Select</th><th>Title</th><th>User</th><th>Email</th><th>City</th><th>Price</th><th>Image</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
 
             listings.forEach(listing => {
                 const hasImage = listing.image_url && listing.image_url.trim() !== '';
@@ -1771,6 +1770,7 @@
                     <td><input type="checkbox" data-id="${listing.id}"></td>
                     <td>${listing.title}</td>
                     <td>${listing.user_name}</td>
+                    <td>${listing.user_email || ''}</td>
                     <td>${listing.city}</td>
                     <td>$${listing.price || 'N/A'}</td>
                     <td>${imageCell}</td>
