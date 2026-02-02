@@ -728,6 +728,8 @@ function contact_seller($conn) {
     $listing_id = intval($json['listing_id'] ?? $_POST['listing_id'] ?? 0);
     $message = trim($json['message'] ?? $_POST['message'] ?? '');
     $share_email = filter_var($json['share_email'] ?? $_POST['share_email'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $share_phone = filter_var($json['share_phone'] ?? $_POST['share_phone'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $phone_override = trim($json['phone'] ?? $_POST['phone'] ?? '');
 
     if ($listing_id <= 0 || $message === '') {
         echo json_encode(['success' => false, 'message' => 'Listing and message required']);
@@ -766,6 +768,35 @@ function contact_seller($conn) {
 
     $buyer_name = get_user_name() ?: 'A verified buyer';
     $buyer_email = $_SESSION['user_email'] ?? '';
+    $buyer_phone = '';
+    if ($share_phone) {
+        if ($phone_override !== '') {
+            $buyer_phone = $phone_override;
+        } else {
+            $stmt = $conn->prepare("SELECT phone FROM users WHERE id = ?");
+            if ($stmt) {
+                $uid = get_user_id();
+                $stmt->bind_param("i", $uid);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $row = $res->fetch_assoc()) {
+                    $buyer_phone = trim($row['phone'] ?? '');
+                }
+                $stmt->close();
+            }
+        }
+    }
+    if ($share_phone && $buyer_phone === '') {
+        echo json_encode(['success' => false, 'message' => 'Please add a phone number or enter one to share.']);
+        return;
+    }
+
+    // Rate limit: 1 message per listing per 10 minutes
+    $rate_key = 'msg_last_' . intval($listing_id);
+    if (isset($_SESSION[$rate_key]) && (time() - intval($_SESSION[$rate_key])) < 600) {
+        echo json_encode(['success' => false, 'message' => 'Please wait 10 minutes before messaging this listing again.']);
+        return;
+    }
     $subject = "BrokeAnt buyer inquiry: {$listing['title']}";
     $body = "You have a new message about your listing.\n\n"
           . "Listing: {$listing['title']}\n"
@@ -776,9 +807,13 @@ function contact_seller($conn) {
     if ($share_email && $buyer_email) {
         $body .= "\nBuyer email (shared): {$buyer_email}\n";
     }
+    if ($share_phone && $buyer_phone) {
+        $body .= "\nBuyer phone (shared): {$buyer_phone}\n";
+    }
 
     send_smtp_message($listing['seller_email'], $subject, $body);
 
+    $_SESSION[$rate_key] = time();
     echo json_encode(['success' => true, 'message' => 'Message sent']);
 }
 

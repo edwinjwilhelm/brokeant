@@ -385,6 +385,28 @@
     .modal .contact .share-email input {
       transform: scale(1.1);
     }
+    .modal .contact .share-phone {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #555;
+    }
+    .modal .contact .share-phone input {
+      transform: scale(1.1);
+    }
+    .modal .contact .phone-input {
+      margin-top: 8px;
+    }
+    .modal .contact .phone-input input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+    }
     .modal .contact .contact-status {
       margin-top: 8px;
       color: #667eea;
@@ -858,6 +880,12 @@
         <label class="share-email">
           <input type="checkbox" id="shareEmail"> Share my email with the seller
         </label>
+        <label class="share-phone">
+          <input type="checkbox" id="sharePhone" onchange="toggleSharePhone()"> Share my phone with the seller
+        </label>
+        <div class="phone-input" id="phoneInputWrap" style="display:none;">
+          <input type="tel" id="sharePhoneValue" placeholder="Phone (optional if in your profile)">
+        </div>
 
         <button class="btn-contact" onclick="sendContactMessage(${itemId})">Send Message</button>
         <div class="contact-status" id="contactStatus"></div>
@@ -890,6 +918,10 @@ function sendContactMessage(listingId) {
     const textarea = document.getElementById('contactMessage');
     const statusEl = document.getElementById('contactStatus');
     const message = textarea ? textarea.value.trim() : '';
+    const sharePhoneEl = document.getElementById('sharePhone');
+    const phoneInputEl = document.getElementById('sharePhoneValue');
+    const sharePhone = !!sharePhoneEl?.checked;
+    const phone = phoneInputEl ? phoneInputEl.value.trim() : '';
 
     if (!message) {
       if (statusEl) statusEl.textContent = 'Please enter a message.';
@@ -902,13 +934,23 @@ function sendContactMessage(listingId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ action: 'contact_seller', listing_id: listingId, message: message, share_email: !!document.getElementById('shareEmail')?.checked })
+      body: JSON.stringify({
+        action: 'contact_seller',
+        listing_id: listingId,
+        message: message,
+        share_email: !!document.getElementById('shareEmail')?.checked,
+        share_phone: sharePhone,
+        phone: phone
+      })
     })
     .then(r => r.json())
     .then(data => {
       if (data && data.success) {
         if (statusEl) statusEl.textContent = 'Message sent to seller.';
         if (textarea) textarea.value = '';
+        if (sharePhoneEl) sharePhoneEl.checked = false;
+        if (phoneInputEl) phoneInputEl.value = '';
+        if (typeof toggleSharePhone === 'function') toggleSharePhone();
       } else {
         if (statusEl) statusEl.textContent = (data && data.message) ? data.message : 'Send failed.';
       }
@@ -916,6 +958,12 @@ function sendContactMessage(listingId) {
     .catch(() => {
       if (statusEl) statusEl.textContent = 'Send failed.';
     });
+  }
+
+  function toggleSharePhone() {
+    const wrap = document.getElementById('phoneInputWrap');
+    const checked = !!document.getElementById('sharePhone')?.checked;
+    if (wrap) wrap.style.display = checked ? 'block' : 'none';
   }
 
   function closeModal() {
