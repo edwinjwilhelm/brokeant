@@ -53,11 +53,30 @@ function delete_listing_with_image($conn, $listing_id) {
         $stmt->close();
     }
 
+    $stmt = $conn->prepare("SELECT image_url FROM listing_images WHERE listing_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $listing_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            if (!empty($row['image_url'])) {
+                delete_local_upload($row['image_url']);
+            }
+        }
+        $stmt->close();
+    }
+
     $stmt = $conn->prepare("DELETE FROM listings WHERE id = ?");
     if (!$stmt) return false;
     $stmt->bind_param("i", $listing_id);
     $ok = $stmt->execute();
     $stmt->close();
+    $stmt = $conn->prepare("DELETE FROM listing_images WHERE listing_id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $listing_id);
+        $stmt->execute();
+        $stmt->close();
+    }
     return $ok;
 }
 

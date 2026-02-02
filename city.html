@@ -821,13 +821,21 @@
     });
     return filtered;
   }
-  function openModal(itemType, itemName, itemDesc, itemPrice, itemImage, itemSellerId, itemId) {
+  function openModal(itemType, itemName, itemDesc, itemPrice, itemImage, itemImages, itemSellerId, itemId) {
     const modalBody = document.getElementById('modalBody');
     const isOwner = currentUser && itemSellerId && currentUser.user_id === itemSellerId;
 
     const title = itemName || 'Item';
     const heading = itemType ? `${itemType}: ${title}` : title;
-    const imageHTML = itemImage ? `<img src="${itemImage}" alt="${title}" onerror="this.style.display='none';">` : '';
+    const images = (Array.isArray(itemImages) && itemImages.length)
+      ? itemImages
+      : (itemImage ? [itemImage] : []);
+    const imageHTML = images.length ? `<img src="${images[0]}" alt="${title}" onerror="this.style.display='none';">` : '';
+    const thumbsHTML = images.length > 1
+      ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;">
+           ${images.slice(1).map(url => `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #eee;cursor:pointer;" onclick="event.target.closest('.modal-content').querySelector('img').src='${url}'">`).join('')}
+         </div>`
+      : '';
     const descHTML = itemDesc ? `<p>${itemDesc}</p>` : '<p>No description</p>';
 
     let priceHTML = '';
@@ -870,6 +878,7 @@
       <h1>${heading}</h1>
       ${descHTML}
       ${priceHTML}
+      ${thumbsHTML}
       ${contactHTML}
       ${actionButtons}
     `;
@@ -1088,7 +1097,7 @@ function sendContactMessage(listingId) {
     if (isVerified) {
       itemBlock.style.cursor = 'pointer';
       itemBlock.addEventListener('click', function() {
-        openModal(category, title, desc, price, imageUrl, sellerId, item.id || 0);
+        openModal(category, title, desc, price, imageUrl, item.images || [], sellerId, item.id || 0);
       });
     }
 

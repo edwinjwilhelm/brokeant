@@ -226,6 +226,24 @@ function delete_self($conn) {
         $stmt->close();
     }
 
+    $stmt = $conn->prepare("
+        SELECT li.image_url
+        FROM listing_images li
+        JOIN listings l ON li.listing_id = l.id
+        WHERE l.user_id = ?
+    ");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) {
+            if (!empty($r['image_url'])) {
+                $images[] = $r['image_url'];
+            }
+        }
+        $stmt->close();
+    }
+
     $ok = true;
     $stmt = $conn->prepare("DELETE FROM listings WHERE user_id = ?");
     if ($stmt) {

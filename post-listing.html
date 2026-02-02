@@ -226,14 +226,19 @@
     
     
     <div class="form-group">
-      <label for="image_url">Image URL (Optional)</label>
+      <label for="image_url">Main Image URL (Optional)</label>
       <input type="url" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+    </div>
+
+    <div class="form-group">
+      <label for="extra_image_urls">Additional Image URLs (Optional)</label>
+      <textarea id="extra_image_urls" name="extra_image_urls" rows="3" placeholder="One URL per line or comma-separated"></textarea>
     </div>
     
     <div class="form-group">
-      <label for="image_file">Upload Image (JPG/PNG, max 25MB)</label>
-      <input type="file" id="image_file" name="image_file" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-      <small>Optional: use a URL above or upload a file. Large photos will be resized.</small>
+      <label for="image_files">Upload Images (JPG/PNG, max 25MB each)</label>
+      <input type="file" id="image_files" name="image_files[]" multiple accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+      <small>Optional: use URLs above and/or upload files. Large photos will be resized.</small>
     </div>
     
     

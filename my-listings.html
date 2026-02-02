@@ -537,8 +537,12 @@
           <input type="url" id="editImageUrl" placeholder="https://...">
         </div>
         <div class="form-group">
-          <label for="editImageFile">Upload new image (JPG/PNG, max 25MB)</label>
-          <input type="file" id="editImageFile" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+          <label for="editExtraImageUrls">Additional Image URLs (optional)</label>
+          <textarea id="editExtraImageUrls" rows="2" placeholder="One URL per line or comma-separated"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editImageFiles">Upload new images (JPG/PNG, max 25MB each)</label>
+          <input type="file" id="editImageFiles" multiple accept=".jpg,.jpeg,.png,image/jpeg,image/png">
         </div>
         <div class="form-group">
           <label for="editStatus">Status</label>
@@ -710,8 +714,10 @@ function editListing(id) {
   document.getElementById('editPrice').value = listing.price || '';
   document.getElementById('editCategory').value = listing.category || 'Other';
   document.getElementById('editImageUrl').value = listing.image_url || '';
-  const editImageFile = document.getElementById('editImageFile');
-  if (editImageFile) editImageFile.value = '';
+  const editImageFiles = document.getElementById('editImageFiles');
+  if (editImageFiles) editImageFiles.value = '';
+  const editExtraImageUrls = document.getElementById('editExtraImageUrls');
+  if (editExtraImageUrls) editExtraImageUrls.value = '';
   document.getElementById('editStatus').value = listing.status || 'active';
 
   document.getElementById('editModal').classList.add('active');
@@ -729,8 +735,18 @@ function openViewModal(id) {
     return;
   }
 
-  const imageHtml = listing.image_url
-    ? `<img src="${listing.image_url}" alt="${listing.title}" onerror="this.style.display='none';">`
+  const images = (listing.images && listing.images.length)
+    ? listing.images
+    : (listing.image_url ? [listing.image_url] : []);
+
+  const imageHtml = images.length
+    ? `<img src="${images[0]}" alt="${listing.title}" onerror="this.style.display='none';">`
+    : '';
+
+  const thumbsHtml = images.length > 1
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;">
+         ${images.slice(1).map(url => `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #eee;cursor:pointer;" onclick="event.target.closest('.view-modal-content').querySelector('img').src='${url}'">`).join('')}
+       </div>`
     : '';
 
   const priceHtml = listing.price
@@ -743,6 +759,7 @@ function openViewModal(id) {
     <div class="meta">${listing.city} • ${new Date(listing.posted_date).toLocaleDateString()}</div>
     ${priceHtml}
     <p>${listing.description || 'No description'}</p>
+    ${thumbsHtml}
   `;
 
   document.getElementById('viewModalBody').innerHTML = body;
@@ -764,9 +781,12 @@ async function saveEdit(e) {
   formData.append('price', document.getElementById('editPrice').value.trim());
   formData.append('category', document.getElementById('editCategory').value);
   formData.append('image_url', document.getElementById('editImageUrl').value.trim());
-  const imageFile = document.getElementById('editImageFile');
-  if (imageFile && imageFile.files && imageFile.files[0]) {
-    formData.append('image_file', imageFile.files[0]);
+  formData.append('extra_image_urls', document.getElementById('editExtraImageUrls').value.trim());
+  const imageFiles = document.getElementById('editImageFiles');
+  if (imageFiles && imageFiles.files && imageFiles.files.length > 0) {
+    Array.from(imageFiles.files).forEach(file => {
+      formData.append('image_files[]', file);
+    });
   }
   formData.append('status', document.getElementById('editStatus').value);
 
