@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BrokeAnt Marketplace | Buy, Sell & Trade Locally</title>
-    <meta name="description" content="BrokeAnt is a local marketplace to buy, sell, and trade items in your city. Discover listings nearby and post your own in minutes.">
+    <meta name="description" content="BrokeAnt is a local marketplace to buy, sell, and trade items in your city. Discover advertisements nearby and post your own in minutes.">
     <link rel="canonical" href="https://www.brokeant.com/">
 
     <meta property="og:title" content="BrokeAnt Marketplace | Buy, Sell & Trade Locally">
-    <meta property="og:description" content="BrokeAnt is a local marketplace to buy, sell, and trade items in your city. Discover listings nearby and post your own in minutes.">
+    <meta property="og:description" content="BrokeAnt is a local marketplace to buy, sell, and trade items in your city. Discover advertisements nearby and post your own in minutes.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.brokeant.com/">
     <meta property="og:image" content="https://www.brokeant.com/Cheerful%20ant%20on%20a%20forest%20path.png">
@@ -16,7 +16,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="BrokeAnt Marketplace | Buy, Sell & Trade Locally">
-    <meta name="twitter:description" content="BrokeAnt is a local marketplace to buy, sell, and trade items in your city. Discover listings nearby and post your own in minutes.">
+    <meta name="twitter:description" content="BrokeAnt is a local marketplace to buy, sell, and trade items in your city. Discover advertisements nearby and post your own in minutes.">
     <meta name="twitter:image" content="https://www.brokeant.com/Cheerful%20ant%20on%20a%20forest%20path.png">
 
   <style>
@@ -544,7 +544,7 @@
     </div>
     <div class="user-btns">
       <a href="/post-listing.html" class="btn-post-item">+ Post Item</a>
-      <a href="/my-listings.html" class="btn-my-listings">My Listings</a>
+      <a href="/my-listings.html" class="btn-my-listings">My Advertisements</a>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -554,7 +554,7 @@
       <img src="./hobo_ChatGPT Image Jan 26, 2026, 02_51_11 PM.png" alt="Hobo" class="alfred-image">
       <p class="alfred-name">Hi, I am Alfred</p>
       <p class="alfred-note">Welcome to BrokeAnt - YOUR local, ad-free marketplace. For $2 per location, you get 20 advertisements and access to verified buyers and sellers in your area.</p>
-      <p class="alfred-note">The cost is $2 CDN via e-transfer per location which gives you 20 listings. Ad free.</p>
+      <p class="alfred-note">The cost is $2 CDN via e-transfer per location which gives you 20 advertisements. Ad free.</p>
     </div>
     <div class="header-content">
       <h1>BrokeAnt Marketplace</h1>
@@ -666,7 +666,7 @@ function loadListings() {
         grid.innerHTML += `
           <div class="listing-card">
             <img src="${listing.image_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'}" 
-                 alt="Listing image" class="listing-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
+                 alt="Advertisement image" class="listing-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22%3E%3C/svg%3E'">
             <div class="listing-body">
               <div class="listing-meta">Sign in to view full details</div>
             </div>
@@ -674,17 +674,17 @@ function loadListings() {
         `;
       });
     } else {
-      grid.innerHTML = '<div class="no-listings">No listings available yet. Be the first to post!</div>';
+      grid.innerHTML = '<div class="no-listings">No advertisements available yet. Be the first to post!</div>';
     }
   })
   .catch(e => {
-    document.getElementById('listingsGrid').innerHTML = '<div class="no-listings">Error loading listings</div>';
+    document.getElementById('listingsGrid').innerHTML = '<div class="no-listings">Error loading advertisements</div>';
   });
 }
 
 // View listing details (future: open modal or detail page)
 function viewListing(id) {
-  alert('Listing detail view coming soon! ID: ' + id);
+  alert('Advertisement detail view coming soon! ID: ' + id);
 }
 
 // Logout

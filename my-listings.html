@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Listings | BrokeAnt Marketplace</title>
-    <meta name="description" content="Manage your BrokeAnt listings, edit details, and request city access.">
+  <title>My Advertisements | BrokeAnt Marketplace</title>
+    <meta name="description" content="Manage your BrokeAnt advertisements, edit details, and request city access.">
     <link rel="canonical" href="https://www.brokeant.com/my-listings.html">
 
-    <meta property="og:title" content="My Listings | BrokeAnt Marketplace">
-    <meta property="og:description" content="Manage your BrokeAnt listings, edit details, and request city access.">
+    <meta property="og:title" content="My Advertisements | BrokeAnt Marketplace">
+    <meta property="og:description" content="Manage your BrokeAnt advertisements, edit details, and request city access.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.brokeant.com/my-listings.html">
     <meta property="og:image" content="https://www.brokeant.com/Cheerful%20ant%20on%20a%20forest%20path.png">
     <meta property="og:site_name" content="BrokeAnt Marketplace">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="My Listings | BrokeAnt Marketplace">
-    <meta name="twitter:description" content="Manage your BrokeAnt listings, edit details, and request city access.">
+    <meta name="twitter:title" content="My Advertisements | BrokeAnt Marketplace">
+    <meta name="twitter:description" content="Manage your BrokeAnt advertisements, edit details, and request city access.">
     <meta name="twitter:image" content="https://www.brokeant.com/Cheerful%20ant%20on%20a%20forest%20path.png">
 
   <style>
@@ -481,7 +481,7 @@
   </div>
 
   <div class="header">
-    <h1>📋 My Listings</h1>
+    <h1>📋 My Advertisements</h1>
     <div>
       <button class="btn-post" onclick="window.location.href='/post-listing.html'">+ Post New Item</button>
       <button class="btn-danger" onclick="openDeleteAccountModal()">Delete Account</button>
@@ -496,14 +496,14 @@
   </div>
   
   <div id="empty-state" class="empty-state" style="display: none;">
-    <h2>No listings yet</h2>
+    <h2>No advertisements yet</h2>
     <p>Start by posting your first item to the marketplace!</p>
   </div>
 
   <div id="editModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Edit Listing</h3>
+        <h3>Edit Advertisement</h3>
         <button class="modal-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
       </div>
       <form id="editForm" class="modal-form" onsubmit="saveEdit(event)">
@@ -562,7 +562,7 @@
   <div id="viewModal" class="modal">
     <div class="view-modal-content">
       <div class="modal-header">
-        <h3>Listing Details</h3>
+        <h3>Advertisement Details</h3>
         <button class="modal-close" onclick="closeViewModal()" aria-label="Close">&times;</button>
       </div>
       <div id="viewModalBody"></div>
@@ -576,7 +576,7 @@
         <button class="modal-close" onclick="closeDeleteAccountModal()" aria-label="Close">&times;</button>
       </div>
       <p style="color:#721c24; font-size:13px; margin-bottom:10px;">
-        This will permanently delete your account, listings, and city access. This cannot be undone.
+        This will permanently delete your account, advertisements, and city access. This cannot be undone.
       </p>
       <div class="form-group">
         <label for="deletePassword">Password</label>
@@ -675,7 +675,7 @@ function loadListings() {
 
 // Delete listing
 function deleteListing(id) {
-  if (!confirm('Are you sure you want to delete this listing?')) return;
+  if (!confirm('Are you sure you want to delete this advertisement?')) return;
   
   const formData = new FormData();
   formData.append('action', 'delete');
@@ -691,7 +691,7 @@ function deleteListing(id) {
     const messageEl = document.getElementById('message');
     if (data.success) {
       messageEl.className = 'message success';
-      messageEl.textContent = 'Listing deleted!';
+      messageEl.textContent = 'Advertisement deleted!';
       setTimeout(loadListings, 1500);
     } else {
       messageEl.className = 'message error';
@@ -704,7 +704,7 @@ function deleteListing(id) {
 function editListing(id) {
   const listing = listingsById[id];
   if (!listing) {
-    alert('Listing not found.');
+    alert('Advertisement not found.');
     return;
   }
 
@@ -731,7 +731,7 @@ function closeEditModal() {
 function openViewModal(id) {
   const listing = listingsById[id];
   if (!listing) {
-    alert('Listing not found.');
+    alert('Advertisement not found.');
     return;
   }
 
@@ -800,7 +800,7 @@ async function saveEdit(e) {
     const data = await response.json();
     if (data.success) {
       messageEl.className = 'message success';
-      messageEl.textContent = 'Listing updated!';
+      messageEl.textContent = 'Advertisement updated!';
       closeEditModal();
       setTimeout(loadListings, 800);
     } else {

@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Post a Listing | BrokeAnt Marketplace</title>
+  <title>Post an Advertisement | BrokeAnt Marketplace</title>
     <meta name="description" content="Post a new item for sale in your city on BrokeAnt. Add photos and details in minutes.">
     <link rel="canonical" href="https://www.brokeant.com/post-listing.html">
 
-    <meta property="og:title" content="Post a Listing | BrokeAnt Marketplace">
+    <meta property="og:title" content="Post an Advertisement | BrokeAnt Marketplace">
     <meta property="og:description" content="Post a new item for sale in your city on BrokeAnt. Add photos and details in minutes.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.brokeant.com/post-listing.html">
@@ -15,7 +15,7 @@
     <meta property="og:site_name" content="BrokeAnt Marketplace">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Post a Listing | BrokeAnt Marketplace">
+    <meta name="twitter:title" content="Post an Advertisement | BrokeAnt Marketplace">
     <meta name="twitter:description" content="Post a new item for sale in your city on BrokeAnt. Add photos and details in minutes.">
     <meta name="twitter:image" content="https://www.brokeant.com/Cheerful%20ant%20on%20a%20forest%20path.png">
 
@@ -184,7 +184,7 @@
   <h1>📝 Post Your Item</h1>
   
   <div class="info">
-    Your listing will be active for 30 days. After that, it will expire and you can renew it.
+    Your advertisement will be active for 30 days. After that, it will expire and you can renew it.
   </div>
   
   <form id="listingForm">
@@ -252,7 +252,7 @@
       </select>
     </div>
     
-    <button type="submit">Post Listing</button>
+    <button type="submit">Post Advertisement</button>
   </form>
   
   <div id="message" class="message"></div>
@@ -318,7 +318,7 @@ document.getElementById('listingForm').addEventListener('submit', async (e) => {
     
     if (data && data.success) {
       messageEl.className = 'message success';
-      messageEl.textContent = 'Listing posted successfully! Redirecting...';
+      messageEl.textContent = 'Advertisement posted successfully! Redirecting...';
       setTimeout(() => {
         window.location.href = '/my-listings.html';
       }, 2000);

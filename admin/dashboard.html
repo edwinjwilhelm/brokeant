@@ -1036,7 +1036,7 @@
                 <h3 id="totalListings">0</h3>
 
 
-                <p>Total Listings</p>
+                <p>Total Advertisements</p>
 
 
             </div>
@@ -1066,7 +1066,7 @@
             <button class="tab active" onclick="switchTab('users')">👥 Users</button>
 
 
-            <button class="tab" onclick="switchTab('listings')">📋 Listings</button>
+            <button class="tab" onclick="switchTab('listings')">📋 Advertisements</button>
             <button class="tab" onclick="switchTab('spam')">🧹 Spam Queue</button>
 
 
@@ -1106,13 +1106,13 @@
             
 
 
-            <!-- Listings Tab -->
+            <!-- Advertisements Tab -->
 
 
             <div id="listings" class="tab-content">
 
 
-                <h2>Listings Management</h2>
+                <h2>Advertisements Management</h2>
 
                 <div class="bulk-actions">
                     <label><input type="checkbox" id="selectAllListings" onchange="toggleAllListings(this)"> Select all</label>
@@ -1120,7 +1120,7 @@
                     <button class="action-btn btn-delete" onclick="bulkListings('reject','listingsTable')">Reject Selected</button>
                     <button class="action-btn btn-delete" onclick="bulkListings('delete','listingsTable')">Delete Selected</button>
                 </div>
-                <div id="listingsTable" class="loading">Loading listings...</div>
+                <div id="listingsTable" class="loading">Loading advertisements...</div>
 
 
             </div>
@@ -1133,7 +1133,7 @@
                     <button class="action-btn btn-delete" onclick="bulkListings('reject','spamTable')">Reject Selected</button>
                     <button class="action-btn btn-delete" onclick="bulkListings('delete','spamTable')">Delete Selected</button>
                 </div>
-                <div id="spamTable" class="loading">Loading flagged listings...</div>
+                <div id="spamTable" class="loading">Loading flagged advertisements...</div>
             </div>
 
 
@@ -1667,7 +1667,7 @@
             } catch (error) {
 
 
-                console.error('Error loading listings:', error);
+                console.error('Error loading advertisements:', error);
 
 
             }
@@ -1703,7 +1703,7 @@
 
                 const hasImage = listing.image_url && listing.image_url.trim() !== '';
                 const imageCell = hasImage
-                    ? `<a href="${listing.image_url}" target="_blank" rel="noopener"><img class="listing-thumb" src="${listing.image_url}" alt="Listing image"></a>`
+                    ? `<a href="${listing.image_url}" target="_blank" rel="noopener"><img class="listing-thumb" src="${listing.image_url}" alt="Advertisement image"></a>`
                     : '<span style="color:#999;">-</span>';
 
                 html += `<tr>
@@ -1763,7 +1763,7 @@
             listings.forEach(listing => {
                 const hasImage = listing.image_url && listing.image_url.trim() !== '';
                 const imageCell = hasImage
-                    ? `<a href="${listing.image_url}" target="_blank" rel="noopener"><img class="listing-thumb" src="${listing.image_url}" alt="Listing image"></a>`
+                    ? `<a href="${listing.image_url}" target="_blank" rel="noopener"><img class="listing-thumb" src="${listing.image_url}" alt="Advertisement image"></a>`
                     : '<span style="color:#999;">-</span>';
 
                 html += `<tr>
@@ -1811,13 +1811,13 @@
         async function bulkListings(action, tableId) {
             const ids = getSelectedListingIds(tableId);
             if (!ids.length) {
-                alert('Select at least one listing.');
+                alert('Select at least one advertisement.');
                 return;
             }
-            if (action === 'delete' && !confirm('Delete selected listings?')) {
+            if (action === 'delete' && !confirm('Delete selected advertisements?')) {
                 return;
             }
-            if (action === 'reject' && !confirm('Reject selected listings?')) {
+            if (action === 'reject' && !confirm('Reject selected advertisements?')) {
                 return;
             }
 
@@ -2421,7 +2421,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    alert('Listing approved');
+                    alert('Advertisement approved');
                     loadListings();
                     loadSpamQueue();
                 } else {
@@ -2433,7 +2433,7 @@
         }
 
         async function rejectListing(listingId) {
-            if (!confirm('Reject this listing?')) {
+            if (!confirm('Reject this advertisement?')) {
                 return;
             }
             try {
@@ -2448,7 +2448,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    alert('Listing rejected');
+                    alert('Advertisement rejected');
                     loadListings();
                     loadSpamQueue();
                 } else {
@@ -2462,7 +2462,7 @@
         async function deleteListing(listingId) {
 
 
-            if (!confirm('Delete this listing?')) {
+            if (!confirm('Delete this advertisement?')) {
 
 
                 return;
@@ -2526,7 +2526,7 @@
                     loadStats();
 
 
-                    alert('Listing deleted');
+                    alert('Advertisement deleted');
 
 
                 }
