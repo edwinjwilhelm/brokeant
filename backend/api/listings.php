@@ -740,7 +740,7 @@ function contact_seller($conn) {
         return;
     }
 
-    $sql = "SELECT l.id, l.title, l.city, l.user_id, u.email AS seller_email
+    $sql = "SELECT l.id, l.title, l.city, l.user_id, u.email AS seller_email, u.name AS seller_name
             FROM listings l
             JOIN users u ON l.user_id = u.id
             WHERE l.id = ? AND l.status = 'active'";
@@ -766,8 +766,21 @@ function contact_seller($conn) {
         return;
     }
 
+    $buyer_id = get_user_id();
     $buyer_name = get_user_name() ?: 'A verified buyer';
     $buyer_email = $_SESSION['user_email'] ?? '';
+    if ($buyer_email === '') {
+        $stmt = $conn->prepare("SELECT email FROM users WHERE id = ?");
+        if ($stmt) {
+            $stmt->bind_param("i", $buyer_id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && $row = $res->fetch_assoc()) {
+                $buyer_email = trim($row['email'] ?? '');
+            }
+            $stmt->close();
+        }
+    }
     $buyer_phone = '';
     if ($share_phone) {
         if ($phone_override !== '') {
@@ -797,12 +810,46 @@ function contact_seller($conn) {
         echo json_encode(['success' => false, 'message' => 'Please wait 10 minutes before messaging this listing again.']);
         return;
     }
+    $token = bin2hex(random_bytes(16));
+    $reply_link = "https://www.brokeant.com/reply-message.html?token={$token}";
+    $seller_name = $listing['seller_name'] ?? '';
+
+    $stmt = $conn->prepare("
+        INSERT INTO listing_messages
+        (listing_id, buyer_id, seller_id, buyer_email, seller_email, buyer_name, seller_name, message, reply_token)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $seller_id = intval($listing['user_id']);
+    $stmt->bind_param(
+        "iiissssss",
+        $listing_id,
+        $buyer_id,
+        $seller_id,
+        $buyer_email,
+        $listing['seller_email'],
+        $buyer_name,
+        $seller_name,
+        $message,
+        $token
+    );
+    if (!$stmt->execute()) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Unable to send message. Please try again.']);
+        return;
+    }
+    $stmt->close();
+
     $subject = "BrokeAnt buyer inquiry: {$listing['title']}";
-    $body = "You have a new message about your listing.\n\n"
-          . "Listing: {$listing['title']}\n"
+    $body = "You have a new message about your advertisement.\n\n"
+          . "Advertisement: {$listing['title']}\n"
           . "City: {$listing['city']}\n"
           . "Buyer: {$buyer_name}\n"
           . "Message:\n{$message}\n\n"
+          . "Reply securely (buyer email stays private):\n{$reply_link}\n\n"
           . "Note: Buyer email is hidden by default.\n";
     if ($share_email && $buyer_email) {
         $body .= "\nBuyer email (shared): {$buyer_email}\n";

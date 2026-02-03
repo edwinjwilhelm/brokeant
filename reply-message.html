@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reply to Buyer - BrokeAnt</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #133d60, #184c75);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #133d60;
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .info {
+      background: #f8f9fa;
+      border: 1px solid #eee;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #444;
+    }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 14px;
+      resize: vertical;
+    }
+    button {
+      width: 100%;
+      background: #ffb34d;
+      color: #402600;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .message {
+      margin-top: 12px;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Reply to Buyer</h1>
+    <div class="subtitle">Send a reply without sharing your email.</div>
+    <div class="info" id="listingInfo">Loading advertisement details...</div>
+    <textarea id="replyMessage" placeholder="Write your reply..."></textarea>
+    <button id="sendBtn" onclick="sendReply()">Send Reply</button>
+    <div id="status" class="message"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const infoEl = document.getElementById('listingInfo');
+    const statusEl = document.getElementById('status');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function showStatus(type, msg) {
+      statusEl.className = 'message ' + type;
+      statusEl.textContent = msg;
+      statusEl.style.display = 'block';
+    }
+
+    if (!token) {
+      infoEl.textContent = 'Missing or invalid link.';
+      sendBtn.disabled = true;
+    } else {
+      fetch('/backend/api/messages.php?action=info&token=' + encodeURIComponent(token))
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            infoEl.textContent = 'Advertisement: ' + data.title + ' (City: ' + data.city + ')';
+            if (data.status === 'replied') {
+              showStatus('error', 'This message has already been replied to.');
+              sendBtn.disabled = true;
+            }
+          } else {
+            infoEl.textContent = data.message || 'Invalid link.';
+            sendBtn.disabled = true;
+          }
+        })
+        .catch(() => {
+          infoEl.textContent = 'Unable to load advertisement details.';
+          sendBtn.disabled = true;
+        });
+    }
+
+    function sendReply() {
+      const message = document.getElementById('replyMessage').value.trim();
+      if (!message) {
+        showStatus('error', 'Please enter a reply message.');
+        return;
+      }
+      sendBtn.disabled = true;
+      showStatus('success', 'Sending...');
+
+      fetch('/backend/api/messages.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reply', token: token, message: message })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showStatus('success', 'Reply sent.');
+        } else {
+          showStatus('error', data.message || 'Send failed.');
+          sendBtn.disabled = false;
+        }
+      })
+      .catch(() => {
+        showStatus('error', 'Send failed.');
+        sendBtn.disabled = false;
+      });
+    }
+  </script>
+</body>
+</html>
