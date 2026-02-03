@@ -15,6 +15,8 @@ if ($action === 'register') {
     logout();
 } elseif ($action === 'delete_self') {
     delete_self($conn);
+} elseif ($action === 'change_password') {
+    change_password($conn);
 } elseif ($action === 'check_session') {
     check_session();
 } elseif ($action === 'check_payment') {
@@ -170,6 +172,63 @@ function delete_local_upload($url) {
     if (is_file($path)) {
         @unlink($path);
     }
+}
+
+
+function change_password($conn) {
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        return;
+    }
+
+    $current = $_POST['current_password'] ?? '';
+    $new = $_POST['new_password'] ?? '';
+
+    if ($current === '' || $new === '') {
+        echo json_encode(['success' => false, 'message' => 'Current and new password required']);
+        return;
+    }
+    if (strlen($new) < 6) {
+        echo json_encode(['success' => false, 'message' => 'New password must be at least 6 characters']);
+        return;
+    }
+
+    $user_id = intval($_SESSION['user_id']);
+
+    $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows === 0) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+        return;
+    }
+    $row = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!password_verify($current, $row['password_hash'])) {
+        echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+        return;
+    }
+
+    $new_hash = password_hash($new, PASSWORD_BCRYPT);
+    $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param("si", $new_hash, $user_id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Password updated']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Unable to update password']);
+    }
+    $stmt->close();
 }
 
 function delete_self($conn) {
