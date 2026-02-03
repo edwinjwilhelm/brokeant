@@ -208,6 +208,26 @@
     .btn-delete:hover {
       background: #c9302c;
     }
+
+    .btn-renew {
+      background: #ffb34d;
+      color: #402600;
+    }
+
+    .btn-renew:hover {
+      background: #ff9d1f;
+    }
+
+    .listing-expiration {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .listing-expiring {
+      color: #b45309;
+      font-weight: 600;
+    }
     
     .empty-state {
       text-align: center;
@@ -739,6 +759,24 @@ function loadListings() {
       container.innerHTML = '';
       listingsById = {};
       data.listings.forEach(listing => {
+        const expiresAt = listing.expiration_date ? new Date(listing.expiration_date) : null;
+        const daysLeft = expiresAt ? Math.ceil((expiresAt - new Date()) / 86400000) : null;
+        let expText = '';
+        let expClass = 'listing-expiration';
+        if (expiresAt) {
+          if (daysLeft !== null && daysLeft < 0) {
+            expText = `Expired on ${expiresAt.toLocaleDateString()}`;
+            expClass += ' listing-expiring';
+          } else {
+            const dayLabel = daysLeft === 1 ? 'day' : 'days';
+            expText = `Expires ${expiresAt.toLocaleDateString()} (${daysLeft} ${dayLabel})`;
+            if (daysLeft !== null && daysLeft <= 7) {
+              expClass += ' listing-expiring';
+            }
+          }
+        }
+        const showRenew = expiresAt && daysLeft !== null && daysLeft <= 7 && listing.status === 'active';
+
         listingsById[listing.id] = listing;
         container.innerHTML += `
           <div class="listing-card">
@@ -762,9 +800,11 @@ function loadListings() {
                 ${listing.status.toUpperCase()}
               </span>
               <div class="listing-meta" style="margin-top: 8px;">👁️ ${listing.views} views</div>
+              ${expText ? `<div class="${expClass}">${expText}</div>` : ''}
               <div class="listing-actions">
                 <button class="btn-small btn-edit" onclick="editListing(${listing.id})">Edit</button>
                 <button class="btn-small btn-delete" onclick="deleteListing(${listing.id})">Delete</button>
+                ${showRenew ? `<button class="btn-small btn-renew" onclick="renewListing(${listing.id})">Renew</button>` : ''}
               </div>
             </div>
           </div>
@@ -803,6 +843,38 @@ function deleteListing(id) {
       messageEl.className = 'message error';
       messageEl.textContent = 'Error: ' + data.message;
     }
+  });
+}
+
+// Renew listing (extend expiration by 60 days)
+function renewListing(id) {
+  if (!confirm('Renew this advertisement for another 60 days?')) return;
+
+  const formData = new FormData();
+  formData.append('action', 'renew');
+  formData.append('id', id);
+
+  fetch('/backend/api/listings.php', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  })
+  .then(r => r.json())
+  .then(data => {
+    const messageEl = document.getElementById('message');
+    if (data.success) {
+      messageEl.className = 'message success';
+      messageEl.textContent = 'Advertisement renewed!';
+      setTimeout(loadListings, 1200);
+    } else {
+      messageEl.className = 'message error';
+      messageEl.textContent = 'Error: ' + data.message;
+    }
+  })
+  .catch(() => {
+    const messageEl = document.getElementById('message');
+    messageEl.className = 'message error';
+    messageEl.textContent = 'Error: unable to renew.';
   });
 }
 

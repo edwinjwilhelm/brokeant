@@ -371,6 +371,8 @@ if ($action === 'create') {
     update_listing($conn);
 } elseif ($action === 'delete') {
     delete_listing($conn);
+} elseif ($action === 'renew') {
+    renew_listing($conn);
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 }
@@ -421,7 +423,7 @@ function create_listing($conn) {
     }
 
     $price = $price ? floatval($price) : NULL;
-    $expiration = date('Y-m-d H:i:s', strtotime('+30 days'));
+    $expiration = date('Y-m-d H:i:s', strtotime('+60 days'));
 
     // Prevent duplicates for same user (last 7 days)
     $dup_sql = "SELECT id FROM listings
@@ -642,7 +644,7 @@ function get_user_listings($conn) {
     
     $user_id = get_user_id();
     
-    $sql = "SELECT id, title, description, price, category, image_url, city, status, posted_date, views
+    $sql = "SELECT id, title, description, price, category, image_url, city, status, posted_date, expiration_date, views
             FROM listings
             WHERE user_id = ?
             ORDER BY posted_date DESC";
@@ -1019,6 +1021,65 @@ function delete_listing($conn) {
         echo json_encode(['success' => false, 'message' => 'Failed to delete']);
     }
     
+    $stmt->close();
+}
+
+// RENEW listing (extend expiration by 60 days)
+function renew_listing($conn) {
+    if (!is_logged_in()) {
+        echo json_encode(['success' => false, 'message' => 'Must be logged in']);
+        return;
+    }
+    if (!is_payment_verified()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Payment verification required']);
+        return;
+    }
+
+    $user_id = get_user_id();
+    $listing_id = intval($_POST['id'] ?? 0);
+    if ($listing_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid listing']);
+        return;
+    }
+
+    $verify_sql = "SELECT user_id, status FROM listings WHERE id = ?";
+    $verify_stmt = $conn->prepare($verify_sql);
+    $verify_stmt->bind_param("i", $listing_id);
+    $verify_stmt->execute();
+    $result = $verify_stmt->get_result();
+    $row = $result->fetch_assoc();
+
+    if ($result->num_rows === 0 || $row['user_id'] !== $user_id) {
+        $verify_stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        return;
+    }
+
+    $status = $row['status'] ?? 'active';
+    if (in_array($status, ['sold', 'removed'], true)) {
+        $verify_stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Cannot renew this advertisement']);
+        return;
+    }
+
+    $verify_stmt->close();
+
+    $new_expiration = date('Y-m-d H:i:s', strtotime('+60 days'));
+    if ($status === 'expired') {
+        $sql = "UPDATE listings SET expiration_date = ?, status = 'active' WHERE id = ?";
+    } else {
+        $sql = "UPDATE listings SET expiration_date = ? WHERE id = ?";
+    }
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("si", $new_expiration, $listing_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Advertisement renewed', 'expiration_date' => $new_expiration]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to renew']);
+    }
+
     $stmt->close();
 }
 ?>
