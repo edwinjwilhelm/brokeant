@@ -77,7 +77,7 @@
     .city-card {
       background: white;
       border-radius: 12px;
-      padding: 40px 30px;
+      padding: 28px 22px;
       text-align: center;
       box-shadow: 0 8px 20px rgba(0,0,0,0.3);
       transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -92,21 +92,21 @@
     
     .city-card h2 {
       color: #133d60;
-      font-size: 32px;
-      margin-bottom: 15px;
+      font-size: 26px;
+      margin-bottom: 10px;
     }
     
     .city-card p {
       color: #666;
       font-size: 14px;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
     
     .city-card .btn {
       display: inline-block;
       background: #ffb34d;
       color: #402600;
-      padding: 12px 30px;
+      padding: 10px 24px;
       border-radius: 6px;
       font-weight: bold;
       text-decoration: none;
@@ -121,8 +121,8 @@
     }
     
     .city-icon {
-      font-size: 48px;
-      margin-bottom: 15px;
+      font-size: 36px;
+      margin-bottom: 10px;
     }
     
     .welcome-static {
@@ -352,6 +352,14 @@
       
       .cities-grid {
         grid-template-columns: 1fr;
+      }
+
+      .city-card {
+        padding: 22px 18px;
+      }
+
+      .city-card h2 {
+        font-size: 22px;
       }
       
       .header {
@@ -618,9 +626,14 @@ function loadCities() {
         return;
       }
 
+      const cities = data.cities
+        .map(city => ({ name: (city && (city.name || city)) ? String(city.name || city) : '' }))
+        .filter(c => c.name.trim() !== '')
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
       grid.innerHTML = '';
-      data.cities.forEach(city => {
-        const name = city.name || city;
+      cities.forEach(city => {
+        const name = city.name;
         const href = `/city.html?city=${encodeURIComponent(name)}`;
         grid.innerHTML += `
           <a href="${href}" class="city-card" target="_blank">
