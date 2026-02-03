@@ -3,7 +3,9 @@ session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/.env.loader.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../lib/smtp_mailer.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
@@ -17,6 +19,10 @@ if ($action === 'register') {
     delete_self($conn);
 } elseif ($action === 'change_password') {
     change_password($conn);
+} elseif ($action === 'request_password_reset') {
+    request_password_reset($conn);
+} elseif ($action === 'reset_password') {
+    reset_password($conn);
 } elseif ($action === 'check_session') {
     check_session();
 } elseif ($action === 'check_payment') {
@@ -464,4 +470,126 @@ function request_city_access($conn) {
     }
     $stmt->close();
 }
+
+function request_password_reset($conn) {
+    $email = trim($_POST['email'] ?? '');
+    $generic = ['success' => true, 'message' => 'If that email exists, a reset link has been sent.'];
+
+    if ($email === '') {
+        echo json_encode($generic);
+        return;
+    }
+
+    $stmt = $conn->prepare("SELECT id, name FROM users WHERE email = ?");
+    if (!$stmt) {
+        echo json_encode($generic);
+        return;
+    }
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res->num_rows === 0) {
+        $stmt->close();
+        echo json_encode($generic);
+        return;
+    }
+    $user = $res->fetch_assoc();
+    $stmt->close();
+
+    $token = bin2hex(random_bytes(16));
+    $token_hash = hash('sha256', $token);
+    $expires = date('Y-m-d H:i:s', time() + 2 * 60 * 60);
+
+    $stmt = $conn->prepare("INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (?, ?, ?)");
+    if ($stmt) {
+        $uid = intval($user['id']);
+        $stmt->bind_param("iss", $uid, $token_hash, $expires);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    $reset_link = "https://www.brokeant.com/reset-password.html?token={$token}";
+    $subject = "BrokeAnt password reset";
+    $body = "Hello " . ($user['name'] ?? 'there') . ",
+
+"
+          . "We received a request to reset your password.
+"
+          . "Reset link (valid for 2 hours):
+{$reset_link}
+
+"
+          . "If you didn't request this, you can ignore this email.
+";
+
+    send_smtp_message($email, $subject, $body);
+
+    echo json_encode($generic);
+}
+
+function reset_password($conn) {
+    $token = trim($_POST['token'] ?? '');
+    $new_password = $_POST['new_password'] ?? '';
+
+    if ($token === '' || $new_password === '') {
+        echo json_encode(['success' => false, 'message' => 'Token and new password required']);
+        return;
+    }
+    if (strlen($new_password) < 6) {
+        echo json_encode(['success' => false, 'message' => 'New password must be at least 6 characters']);
+        return;
+    }
+
+    $token_hash = hash('sha256', $token);
+    $stmt = $conn->prepare("SELECT id, user_id, expires_at, used_at FROM password_resets WHERE token_hash = ? LIMIT 1");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param("s", $token_hash);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res->num_rows === 0) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Invalid or expired link']);
+        return;
+    }
+    $row = $res->fetch_assoc();
+    $stmt->close();
+
+    if (!empty($row['used_at'])) {
+        echo json_encode(['success' => false, 'message' => 'This reset link has already been used']);
+        return;
+    }
+    if (strtotime($row['expires_at']) < time()) {
+        echo json_encode(['success' => false, 'message' => 'This reset link has expired']);
+        return;
+    }
+
+    $user_id = intval($row['user_id']);
+    $new_hash = password_hash($new_password, PASSWORD_BCRYPT);
+    $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        return;
+    }
+    $stmt->bind_param("si", $new_hash, $user_id);
+    if (!$stmt->execute()) {
+        $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Unable to update password']);
+        return;
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare("UPDATE password_resets SET used_at = NOW() WHERE id = ?");
+    if ($stmt) {
+        $rid = intval($row['id']);
+        $stmt->bind_param("i", $rid);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Password updated']);
+}
+
 ?>
