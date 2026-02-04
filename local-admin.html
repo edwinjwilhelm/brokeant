@@ -70,6 +70,51 @@
       font-weight: bold;
       color: #133d60;
     }
+    .apply-box {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+      background: #f9fbff;
+    }
+    .apply-box label {
+      display: block;
+      font-weight: bold;
+      margin: 10px 0 6px;
+      font-size: 13px;
+      color: #133d60;
+    }
+    .apply-box input,
+    .apply-box textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .apply-box textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+    .apply-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-secondary {
+      background: #133d60;
+      color: #fff;
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #155724;
+    }
+    .status.error {
+      color: #721c24;
+    }
   </style>
 </head>
 <body>
@@ -109,6 +154,76 @@
     <p class="note">We usually respond within 1-2 business days.</p>
 
     <a class="btn" href="https://www.brokeant.com/register.html" target="_blank" rel="noopener">Create an Account</a>
+
+    <div class="apply-box">
+      <h2>Apply Online</h2>
+      <div id="loginPrompt" class="note" style="display:none;">
+        Please <a href="https://www.brokeant.com/login.html" target="_blank" rel="noopener">log in</a> to submit an application.
+      </div>
+      <form id="applyForm">
+        <label for="applyCity">Town/City</label>
+        <input type="text" id="applyCity" placeholder="Your town name" required>
+
+        <label for="applyReason">Why do you want to help?</label>
+        <textarea id="applyReason" placeholder="Short reason..."></textarea>
+
+        <div class="apply-actions">
+          <button class="btn btn-secondary" type="submit">Submit Application</button>
+          <a class="btn" href="https://www.brokeant.com/local-admin-dashboard.html" target="_blank" rel="noopener">Local Admin Dashboard</a>
+        </div>
+        <div id="applyStatus" class="status"></div>
+      </form>
+    </div>
   </div>
+
+  <script>
+    const statusEl = document.getElementById('applyStatus');
+    const loginPrompt = document.getElementById('loginPrompt');
+    const form = document.getElementById('applyForm');
+
+    fetch('/backend/api/local-admin.php?action=check', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.logged_in) {
+          loginPrompt.style.display = 'block';
+          form.querySelector('button[type="submit"]').disabled = true;
+        }
+      })
+      .catch(() => {});
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      statusEl.textContent = '';
+      statusEl.className = 'status';
+
+      const city = document.getElementById('applyCity').value.trim();
+      const reason = document.getElementById('applyReason').value.trim();
+
+      const formData = new FormData();
+      formData.append('action', 'request');
+      formData.append('city', city);
+      formData.append('reason', reason);
+
+      fetch('/backend/api/local-admin.php', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          statusEl.textContent = 'Application submitted. We will review it soon.';
+          form.reset();
+        } else {
+          statusEl.textContent = data.message || 'Unable to submit application.';
+          statusEl.className = 'status error';
+        }
+      })
+      .catch(() => {
+        statusEl.textContent = 'Unable to submit application.';
+        statusEl.className = 'status error';
+      });
+    });
+  </script>
 </body>
 </html>

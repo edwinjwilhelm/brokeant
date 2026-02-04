@@ -1072,6 +1072,7 @@
 
             <button class="tab" onclick="switchTab('payments')">💰 Payments</button>
             <button class="tab" onclick="switchTab('cities')">City Access</button>
+            <button class="tab" onclick="switchTab('localadmins')">Local Admins</button>
 
 
         </div>
@@ -1163,6 +1164,14 @@
                     <button class="action-btn btn-verify" onclick="addCityAccess()">Add City</button>
                 </div>
                 <div id="cityAccessTable" class="loading">Loading city access...</div>
+            </div>
+
+            <div id="localadmins" class="tab-content">
+                <h2>Local Admin Requests</h2>
+                <div id="localAdminRequestsTable" class="loading">Loading requests...</div>
+
+                <h2 style="margin-top: 20px;">Current Local Admins</h2>
+                <div id="localAdminsTable" class="loading">Loading local admins...</div>
             </div>
 
 
@@ -2064,6 +2073,139 @@
             loadCityAccess();
         }
 
+        // Local admin requests
+        async function loadLocalAdminRequests() {
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'get_local_admin_requests' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    displayLocalAdminRequests(data.rows);
+                } else {
+                    document.getElementById('localAdminRequestsTable').innerHTML = '<p>Error loading requests</p>';
+                }
+            } catch (error) {
+                document.getElementById('localAdminRequestsTable').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        }
+
+        function displayLocalAdminRequests(rows) {
+            if (!rows || rows.length === 0) {
+                document.getElementById('localAdminRequestsTable').innerHTML = '<p>No local admin requests yet.</p>';
+                return;
+            }
+            let html = '<table><thead><tr><th>User</th><th>City</th><th>Reason</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>';
+            rows.forEach(row => {
+                const badgeClass = row.status === 'approved'
+                    ? 'badge badge-approved'
+                    : (row.status === 'rejected' ? 'badge badge-failed' : 'badge badge-requested');
+                let actions = '';
+                if (row.status === 'requested') {
+                    actions = `<button class="action-btn btn-verify" onclick="approveLocalAdminRequest(${row.id})">Approve</button>
+                               <button class="action-btn btn-delete" onclick="rejectLocalAdminRequest(${row.id})">Reject</button>`;
+                } else {
+                    actions = '<span style="color:#999;">No actions</span>';
+                }
+                html += `<tr>
+                    <td>${row.email}</td>
+                    <td>${row.city}</td>
+                    <td>${row.reason || ''}</td>
+                    <td><span class="${badgeClass}">${row.status}</span></td>
+                    <td>${new Date(row.created_at).toLocaleDateString()}</td>
+                    <td>${actions}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('localAdminRequestsTable').innerHTML = html;
+        }
+
+        async function approveLocalAdminRequest(id) {
+            await fetch('/backend/api/admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentAdminToken
+                },
+                body: JSON.stringify({ action: 'approve_local_admin_request', id: id })
+            });
+            loadLocalAdminRequests();
+            loadLocalAdmins();
+        }
+
+        async function rejectLocalAdminRequest(id) {
+            await fetch('/backend/api/admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentAdminToken
+                },
+                body: JSON.stringify({ action: 'reject_local_admin_request', id: id })
+            });
+            loadLocalAdminRequests();
+        }
+
+        async function loadLocalAdmins() {
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({ action: 'get_local_admins' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    displayLocalAdmins(data.rows);
+                } else {
+                    document.getElementById('localAdminsTable').innerHTML = '<p>Error loading local admins</p>';
+                }
+            } catch (error) {
+                document.getElementById('localAdminsTable').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        }
+
+        function displayLocalAdmins(rows) {
+            if (!rows || rows.length === 0) {
+                document.getElementById('localAdminsTable').innerHTML = '<p>No local admins yet.</p>';
+                return;
+            }
+            let html = '<table><thead><tr><th>User</th><th>City</th><th>Status</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>';
+            rows.forEach(row => {
+                const badgeClass = row.status === 'active' ? 'badge badge-approved' : 'badge badge-failed';
+                const actionBtn = row.status === 'active'
+                    ? `<button class="action-btn btn-delete" onclick="revokeLocalAdmin(${row.id})">Revoke</button>`
+                    : '<span style="color:#999;">Revoked</span>';
+                html += `<tr>
+                    <td>${row.email}</td>
+                    <td>${row.city}</td>
+                    <td><span class="${badgeClass}">${row.status}</span></td>
+                    <td>${new Date(row.created_at).toLocaleDateString()}</td>
+                    <td>${actionBtn}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('localAdminsTable').innerHTML = html;
+        }
+
+        async function revokeLocalAdmin(id) {
+            await fetch('/backend/api/admin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentAdminToken
+                },
+                body: JSON.stringify({ action: 'revoke_local_admin', id: id })
+            });
+            loadLocalAdmins();
+        }
+
         // Switch tabs
 
 
@@ -2092,6 +2234,10 @@
             else if (tabName === 'spam') loadSpamQueue();
             else if (tabName === 'payments') loadPayments();
             else if (tabName === 'cities') loadCityAccess();
+            else if (tabName === 'localadmins') {
+                loadLocalAdminRequests();
+                loadLocalAdmins();
+            }
 
 
         }

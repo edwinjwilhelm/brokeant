@@ -109,6 +109,16 @@ if ($action === 'admin_login') {
     revoke_city($conn);
 } elseif ($action === 'add_city_access' && verifyToken($token)) {
     add_city_access($conn);
+} elseif ($action === 'get_local_admin_requests' && verifyToken($token)) {
+    get_local_admin_requests($conn);
+} elseif ($action === 'approve_local_admin_request' && verifyToken($token)) {
+    approve_local_admin_request($conn);
+} elseif ($action === 'reject_local_admin_request' && verifyToken($token)) {
+    reject_local_admin_request($conn);
+} elseif ($action === 'get_local_admins' && verifyToken($token)) {
+    get_local_admins($conn);
+} elseif ($action === 'revoke_local_admin' && verifyToken($token)) {
+    revoke_local_admin($conn);
 } elseif ($action === 'delete_user' && verifyToken($token)) {
     delete_user($conn);
 } elseif ($action === 'get_listings' && verifyToken($token)) {
@@ -612,6 +622,19 @@ function ensure_city($conn, $city) {
     }
 }
 
+function add_user_city_access($conn, $user_id, $city) {
+    if ($user_id <= 0 || empty($city)) {
+        return;
+    }
+    $stmt = $conn->prepare("INSERT IGNORE INTO user_city_access (user_id, city, status) VALUES (?, ?, 'approved')");
+    if ($stmt) {
+        $stmt->bind_param("is", $user_id, $city);
+        $stmt->execute();
+        $stmt->close();
+    }
+    ensure_city($conn, $city);
+}
+
 function approve_city($conn) {
     $json = getJsonBody();
     $id = intval($json['id'] ?? 0);
@@ -690,5 +713,113 @@ function add_city_access($conn) {
     } else {
         echo json_encode(['success' => false, 'error' => $stmt->error]);
     }
+}
+
+// Local admin requests
+function get_local_admin_requests($conn) {
+    $result = $conn->query("
+        SELECT r.id, r.user_id, r.city, r.reason, r.status, r.created_at,
+               u.email, u.name
+        FROM local_admin_requests r
+        JOIN users u ON r.user_id = u.id
+        ORDER BY r.created_at DESC
+    ");
+
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+
+    echo json_encode(['success' => true, 'rows' => $rows]);
+}
+
+function approve_local_admin_request($conn) {
+    $json = getJsonBody();
+    $id = intval($json['id'] ?? 0);
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+
+    $stmt = $conn->prepare("SELECT user_id, city FROM local_admin_requests WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$row) {
+        echo json_encode(['success' => false, 'error' => 'Request not found']);
+        return;
+    }
+
+    $user_id = intval($row['user_id']);
+    $city = $row['city'];
+
+    $upd = $conn->prepare("UPDATE local_admin_requests SET status = 'approved' WHERE id = ?");
+    $upd->bind_param("i", $id);
+    $upd->execute();
+    $upd->close();
+
+    $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, status) VALUES (?, ?, 'active')");
+    $ins->bind_param("is", $user_id, $city);
+    $ins->execute();
+    $ins->close();
+
+    add_user_city_access($conn, $user_id, $city);
+
+    echo json_encode(['success' => true, 'message' => 'Approved']);
+}
+
+function reject_local_admin_request($conn) {
+    $json = getJsonBody();
+    $id = intval($json['id'] ?? 0);
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+
+    $stmt = $conn->prepare("UPDATE local_admin_requests SET status = 'rejected' WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Rejected']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+    $stmt->close();
+}
+
+function get_local_admins($conn) {
+    $result = $conn->query("
+        SELECT la.id, la.user_id, la.city, la.status, la.created_at,
+               u.email, u.name
+        FROM local_admins la
+        JOIN users u ON la.user_id = u.id
+        ORDER BY la.created_at DESC
+    ");
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    echo json_encode(['success' => true, 'rows' => $rows]);
+}
+
+function revoke_local_admin($conn) {
+    $json = getJsonBody();
+    $id = intval($json['id'] ?? 0);
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+    $stmt = $conn->prepare("UPDATE local_admins SET status = 'revoked' WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Revoked']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+    $stmt->close();
 }
 ?>

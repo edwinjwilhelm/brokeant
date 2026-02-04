@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Admin Dashboard - BrokeAnt</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .navbar {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .navbar h1 {
+      font-size: 20px;
+      color: #133d60;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .info {
+      background: #fff;
+      border-radius: 10px;
+      padding: 15px 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #d4edda;
+      color: #155724;
+      margin-right: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+    .thumb {
+      width: 70px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 6px;
+      background: #f0f0f0;
+    }
+    .actions button {
+      padding: 6px 10px;
+      margin-right: 6px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-approve { background: #28a745; color: #fff; }
+    .btn-reject { background: #dc3545; color: #fff; }
+    .btn-remove { background: #ffc107; color: #333; }
+    .message {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>Local Admin Dashboard</h1>
+    <div>
+      <a href="/index.html">Home</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="info" id="adminInfo">
+      Checking your access...
+    </div>
+
+    <div id="queueSection">
+      <h2 style="margin: 10px 0;">Pending Listings</h2>
+      <div id="queueTable" class="message">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    let localAdminCities = [];
+
+    function renderAdminInfo(data) {
+      const info = document.getElementById('adminInfo');
+      if (!data.logged_in) {
+        info.innerHTML = 'Please <a href="/login.html">log in</a> to continue.';
+        return;
+      }
+      if (!data.is_local_admin) {
+        info.innerHTML = 'You are not approved as a Local Admin yet.';
+        return;
+      }
+      localAdminCities = data.cities || [];
+      info.innerHTML = `Approved towns: ${localAdminCities.map(c => `<span class="badge">${c}</span>`).join('')}`;
+    }
+
+    async function loadQueue() {
+      const target = document.getElementById('queueTable');
+      try {
+        const response = await fetch('/backend/api/local-admin.php?action=get_queue', { credentials: 'include' });
+        const data = await response.json();
+        if (!data.success) {
+          target.textContent = data.message || 'Unable to load queue.';
+          return;
+        }
+        if (!data.rows || data.rows.length === 0) {
+          target.textContent = 'No pending listings right now.';
+          return;
+        }
+        let html = '<table><thead><tr><th>Image</th><th>Title</th><th>City</th><th>Seller</th><th>Status</th><th>Posted</th><th>Actions</th></tr></thead><tbody>';
+        data.rows.forEach(row => {
+          html += `<tr>
+            <td><img class="thumb" src="${row.image_url || ''}" onerror="this.style.display='none'"></td>
+            <td>${row.title}</td>
+            <td>${row.city}</td>
+            <td>${row.seller_name}</td>
+            <td>${row.status}</td>
+            <td>${new Date(row.posted_date).toLocaleDateString()}</td>
+            <td class="actions">
+              <button class="btn-approve" onclick="updateListing('approve_listing', ${row.id})">Approve</button>
+              <button class="btn-reject" onclick="updateListing('reject_listing', ${row.id})">Reject</button>
+              <button class="btn-remove" onclick="updateListing('remove_image', ${row.id})">Remove Image</button>
+            </td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        target.innerHTML = html;
+      } catch (e) {
+        target.textContent = 'Unable to load queue.';
+      }
+    }
+
+    async function updateListing(action, listingId) {
+      const formData = new FormData();
+      formData.append('action', action);
+      formData.append('listing_id', listingId);
+      await fetch('/backend/api/local-admin.php', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      loadQueue();
+    }
+
+    fetch('/backend/api/local-admin.php?action=check', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        renderAdminInfo(data);
+        if (data.logged_in && data.is_local_admin) {
+          loadQueue();
+        }
+      })
+      .catch(() => {
+        document.getElementById('adminInfo').textContent = 'Unable to check access.';
+      });
+  </script>
+</body>
+</html>
