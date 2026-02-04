@@ -2100,7 +2100,7 @@
                 document.getElementById('localAdminRequestsTable').innerHTML = '<p>No local admin requests yet.</p>';
                 return;
             }
-            let html = '<table><thead><tr><th>User</th><th>City</th><th>Reason</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>User</th><th>Name</th><th>Phone</th><th>City</th><th>Reason</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>';
             rows.forEach(row => {
                 const badgeClass = row.status === 'approved'
                     ? 'badge badge-approved'
@@ -2114,6 +2114,8 @@
                 }
                 html += `<tr>
                     <td>${row.email}</td>
+                    <td>${row.admin_name || ''}</td>
+                    <td>${row.admin_phone || ''}</td>
                     <td>${row.city}</td>
                     <td>${row.reason || ''}</td>
                     <td><span class="${badgeClass}">${row.status}</span></td>
@@ -2176,7 +2178,7 @@
                 document.getElementById('localAdminsTable').innerHTML = '<p>No local admins yet.</p>';
                 return;
             }
-            let html = '<table><thead><tr><th>User</th><th>City</th><th>Status</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>User</th><th>Name</th><th>Phone</th><th>City</th><th>Status</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>';
             rows.forEach(row => {
                 const badgeClass = row.status === 'active' ? 'badge badge-approved' : 'badge badge-failed';
                 const actionBtn = row.status === 'active'
@@ -2184,6 +2186,8 @@
                     : '<span style="color:#999;">Revoked</span>';
                 html += `<tr>
                     <td>${row.email}</td>
+                    <td>${row.admin_name || ''}</td>
+                    <td>${row.admin_phone || ''}</td>
                     <td>${row.city}</td>
                     <td><span class="${badgeClass}">${row.status}</span></td>
                     <td>${new Date(row.created_at).toLocaleDateString()}</td>

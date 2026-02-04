@@ -70,21 +70,23 @@ function request_local_admin($conn) {
         return;
     }
     $user_id = get_user_id();
+    $admin_name = trim($_POST['admin_name'] ?? '');
+    $admin_phone = trim($_POST['admin_phone'] ?? '');
     $city = trim($_POST['city'] ?? '');
     $reason = trim($_POST['reason'] ?? '');
 
-    if ($city === '') {
+    if ($admin_name === '' || $admin_phone === '' || $city === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'City is required']);
+        echo json_encode(['success' => false, 'message' => 'Name, phone, and city are required']);
         return;
     }
 
-    $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, status) VALUES (?, ?, ?, 'requested')");
+    $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, ?, 'requested')");
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
         return;
     }
-    $stmt->bind_param("iss", $user_id, $city, $reason);
+    $stmt->bind_param("issss", $user_id, $city, $reason, $admin_name, $admin_phone);
     $ok = $stmt->execute();
     $stmt->close();
 
@@ -98,6 +100,8 @@ function request_local_admin($conn) {
     $body = "A new Local Admin request was submitted.\n\n"
           . "User: " . ($user['name'] ?? '') . "\n"
           . "Email: " . ($user['email'] ?? '') . "\n"
+          . "Name: {$admin_name}\n"
+          . "Phone: {$admin_phone}\n"
           . "City: {$city}\n"
           . "Reason: {$reason}\n";
     send_admin_alert($subject, $body);

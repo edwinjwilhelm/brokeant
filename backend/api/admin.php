@@ -718,7 +718,7 @@ function add_city_access($conn) {
 // Local admin requests
 function get_local_admin_requests($conn) {
     $result = $conn->query("
-        SELECT r.id, r.user_id, r.city, r.reason, r.status, r.created_at,
+        SELECT r.id, r.user_id, r.city, r.reason, r.admin_name, r.admin_phone, r.status, r.created_at,
                u.email, u.name
         FROM local_admin_requests r
         JOIN users u ON r.user_id = u.id
@@ -742,7 +742,7 @@ function approve_local_admin_request($conn) {
         return;
     }
 
-    $stmt = $conn->prepare("SELECT user_id, city FROM local_admin_requests WHERE id = ?");
+    $stmt = $conn->prepare("SELECT user_id, city, admin_name, admin_phone FROM local_admin_requests WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -755,14 +755,16 @@ function approve_local_admin_request($conn) {
 
     $user_id = intval($row['user_id']);
     $city = $row['city'];
+    $admin_name = $row['admin_name'] ?? '';
+    $admin_phone = $row['admin_phone'] ?? '';
 
     $upd = $conn->prepare("UPDATE local_admin_requests SET status = 'approved' WHERE id = ?");
     $upd->bind_param("i", $id);
     $upd->execute();
     $upd->close();
 
-    $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, status) VALUES (?, ?, 'active')");
-    $ins->bind_param("is", $user_id, $city);
+    $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, 'active')");
+    $ins->bind_param("isss", $user_id, $city, $admin_name, $admin_phone);
     $ins->execute();
     $ins->close();
 
@@ -792,7 +794,7 @@ function reject_local_admin_request($conn) {
 
 function get_local_admins($conn) {
     $result = $conn->query("
-        SELECT la.id, la.user_id, la.city, la.status, la.created_at,
+        SELECT la.id, la.user_id, la.city, la.admin_name, la.admin_phone, la.status, la.created_at,
                u.email, u.name
         FROM local_admins la
         JOIN users u ON la.user_id = u.id
