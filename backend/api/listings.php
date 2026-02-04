@@ -604,9 +604,12 @@ function get_city_listings($conn) {
     }
 
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category,
-                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score
+                   l.image_url, l.city, l.posted_date, u.name, u.reputation_score,
+                   CASE WHEN la.id IS NULL THEN 0 ELSE 1 END AS is_local_admin
             FROM listings l
             JOIN users u ON l.user_id = u.id
+            LEFT JOIN local_admins la
+              ON la.user_id = l.user_id AND la.city = l.city AND la.status = 'active'
             WHERE l.status = 'active' AND l.city = ?
             ORDER BY l.posted_date DESC LIMIT 100";
 
@@ -680,9 +683,12 @@ function get_single_listing($conn) {
     }
     
     $sql = "SELECT l.id, l.user_id, l.title, l.description, l.price, l.category, 
-                   l.image_url, l.city, l.posted_date, l.views, l.status, u.name, u.reputation_score
+                   l.image_url, l.city, l.posted_date, l.views, l.status, u.name, u.reputation_score,
+                   CASE WHEN la.id IS NULL THEN 0 ELSE 1 END AS is_local_admin
             FROM listings l
             JOIN users u ON l.user_id = u.id
+            LEFT JOIN local_admins la
+              ON la.user_id = l.user_id AND la.city = l.city AND la.status = 'active'
             WHERE l.id = ?";
     
     $stmt = $conn->prepare($sql);
