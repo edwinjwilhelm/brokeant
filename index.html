@@ -437,6 +437,7 @@
       justify-content: center;
       z-index: 1200;
       padding: 20px;
+      box-sizing: border-box;
     }
 
     .welcome-modal.active {
@@ -451,6 +452,10 @@
       max-width: 520px;
       box-shadow: 0 12px 24px rgba(0,0,0,0.35);
       animation: welcomePop 0.25s ease-out;
+      position: relative;
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     @keyframes welcomePop {
@@ -463,6 +468,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
+      padding-right: 36px;
     }
 
     .welcome-header h3 {
@@ -477,6 +483,16 @@
       font-size: 22px;
       color: #666;
       cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+      text-align: center;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
 
     .welcome-layout {
