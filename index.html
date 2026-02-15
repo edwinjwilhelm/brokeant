@@ -67,14 +67,14 @@
       color: #ccc;
     }
     
-    .cities-grid {
+    .provinces-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 30px;
       margin-bottom: 40px;
     }
     
-    .city-card {
+    .province-card {
       background: white;
       border-radius: 12px;
       padding: 28px 22px;
@@ -83,26 +83,34 @@
       transition: transform 0.3s ease, box-shadow 0.3s ease;
       text-decoration: none;
       color: #333;
+      border: none;
+      width: 100%;
+      cursor: pointer;
     }
     
-    .city-card:hover {
+    .province-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 12px 30px rgba(0,0,0,0.4);
     }
+
+    .province-card.active {
+      outline: 2px solid #ffb34d;
+      transform: translateY(-3px);
+    }
     
-    .city-card h2 {
+    .province-card h2 {
       color: #133d60;
       font-size: 26px;
       margin-bottom: 10px;
     }
     
-    .city-card p {
+    .province-card p {
       color: #666;
       font-size: 14px;
       margin-bottom: 14px;
     }
     
-    .city-card .btn {
+    .province-card .btn {
       display: inline-block;
       background: #ffb34d;
       color: #402600;
@@ -116,13 +124,78 @@
       font-size: 14px;
     }
     
-    .city-card .btn:hover {
+    .province-card .btn:hover {
       background: #ff9d1f;
     }
     
-    .city-icon {
+    .province-icon {
       font-size: 36px;
       margin-bottom: 10px;
+    }
+
+    .province-panel {
+      display: none;
+      background: rgba(255,255,255,0.95);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin: 10px 0 40px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+      scroll-margin-top: 20px;
+    }
+
+    .province-panel.active {
+      display: block;
+    }
+
+    .province-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .province-panel-header h3 {
+      margin: 0;
+      color: #133d60;
+      font-size: 18px;
+    }
+
+    .btn-secondary {
+      background: #e9ecef;
+      color: #333;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-secondary:hover {
+      background: #dfe3e7;
+    }
+
+    .province-cities-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .province-cities-list a {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: #133d60;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .province-cities-list a:hover {
+      border-color: #ffb34d;
+      color: #0b2b46;
     }
     
     .welcome-static {
@@ -361,15 +434,15 @@
         font-size: 32px;
       }
       
-      .cities-grid {
+      .provinces-grid {
         grid-template-columns: 1fr;
       }
 
-      .city-card {
+      .province-card {
         padding: 22px 18px;
       }
 
-      .city-card h2 {
+      .province-card h2 {
         font-size: 22px;
       }
       
@@ -604,7 +677,7 @@
     <div class="header-content">
       <h1>BrokeAnt Marketplace</h1>
       <p>Buy, Sell & Trade Locally</p>
-      <p class="subtitle">Select your city to get started</p>
+      <p class="subtitle">Select your province or territory to get started</p>
       <div class="header-actions">
         <a href="https://www.brokeant.com/register.html">Create Account</a>
         <a class="alt" href="https://www.brokeant.com/login.html">Login</a>
@@ -618,8 +691,17 @@
       <div class="no-listings">Loading advertisements...</div>
     </div>
   </div>
-  <div class="cities-grid" id="citiesGrid">
-    <div class="no-listings">Loading cities...</div>
+  <div class="provinces-grid" id="provincesGrid">
+    <div class="no-listings">Loading provinces...</div>
+  </div>
+
+  <div class="province-panel" id="provincePanel">
+    <div class="province-panel-header">
+      <h3 id="provinceTitle">Select a province or territory</h3>
+      <button class="btn-secondary" id="clearProvince" type="button">Clear</button>
+    </div>
+    <div id="provinceCitiesList" class="province-cities-list"></div>
+    <div id="provinceEmpty" class="no-listings">No cities available yet.</div>
   </div>
   
   
@@ -655,39 +737,242 @@ function checkAuth() {
   loadListings();
 }
 
-// Auto-logout on homepage to avoid stale sessions
+const PROVINCES = [
+  { name: 'Alberta', type: 'Province' },
+  { name: 'British Columbia', type: 'Province' },
+  { name: 'Manitoba', type: 'Province' },
+  { name: 'New Brunswick', type: 'Province' },
+  { name: 'Newfoundland and Labrador', type: 'Province' },
+  { name: 'Nova Scotia', type: 'Province' },
+  { name: 'Ontario', type: 'Province' },
+  { name: 'Prince Edward Island', type: 'Province' },
+  { name: 'Quebec', type: 'Province' },
+  { name: 'Saskatchewan', type: 'Province' },
+  { name: 'Northwest Territories', type: 'Territory' },
+  { name: 'Nunavut', type: 'Territory' },
+  { name: 'Yukon', type: 'Territory' }
+];
+
+const CITY_TO_PROVINCE_RAW = {
+  'melville': 'Saskatchewan',
+  'regina': 'Saskatchewan',
+  'yorkton': 'Saskatchewan',
+  'saskatoon': 'Saskatchewan',
+  'calgary': 'Alberta',
+  'edmonton': 'Alberta',
+  'red deer': 'Alberta',
+  'vancouver': 'British Columbia',
+  'victoria': 'British Columbia',
+  'winnipeg': 'Manitoba',
+  'toronto': 'Ontario',
+  'ottawa': 'Ontario',
+  'mississauga': 'Ontario',
+  'hamilton': 'Ontario',
+  'montreal': 'Quebec',
+  'quebec city': 'Quebec',
+  'halifax': 'Nova Scotia',
+  'fredericton': 'New Brunswick',
+  'saint john': 'New Brunswick',
+  "st. john's": 'Newfoundland and Labrador',
+  "st john's": 'Newfoundland and Labrador',
+  'charlottetown': 'Prince Edward Island',
+  'whitehorse': 'Yukon',
+  'yellowknife': 'Northwest Territories',
+  'iqaluit': 'Nunavut'
+};
+
+const PROVINCE_ALIASES = {
+  'ab': 'Alberta',
+  'alberta': 'Alberta',
+  'bc': 'British Columbia',
+  'british columbia': 'British Columbia',
+  'mb': 'Manitoba',
+  'manitoba': 'Manitoba',
+  'nb': 'New Brunswick',
+  'new brunswick': 'New Brunswick',
+  'nl': 'Newfoundland and Labrador',
+  'newfoundland and labrador': 'Newfoundland and Labrador',
+  'ns': 'Nova Scotia',
+  'nova scotia': 'Nova Scotia',
+  'nt': 'Northwest Territories',
+  'nwt': 'Northwest Territories',
+  'northwest territories': 'Northwest Territories',
+  'nu': 'Nunavut',
+  'nunavut': 'Nunavut',
+  'on': 'Ontario',
+  'ontario': 'Ontario',
+  'pe': 'Prince Edward Island',
+  'pei': 'Prince Edward Island',
+  'prince edward island': 'Prince Edward Island',
+  'qc': 'Quebec',
+  'pq': 'Quebec',
+  'quebec': 'Quebec',
+  'sk': 'Saskatchewan',
+  'saskatchewan': 'Saskatchewan',
+  'yt': 'Yukon',
+  'yukon': 'Yukon'
+};
+
+const PROVINCE_NAME_MAP = PROVINCES.reduce((acc, p) => {
+  acc[p.name.toLowerCase()] = p.name;
+  return acc;
+}, {});
+
+const normalizeCityKey = (value) => String(value || '')
+  .toLowerCase()
+  .replace(/[^a-z]+/g, ' ')
+  .trim()
+  .replace(/\s+/g, ' ');
+
+const CITY_TO_PROVINCE = Object.entries(CITY_TO_PROVINCE_RAW).reduce((acc, [key, province]) => {
+  acc[normalizeCityKey(key)] = province;
+  return acc;
+}, {});
+
+function inferProvince(cityName) {
+  if (!cityName) return null;
+  const clean = String(cityName).trim();
+  if (!clean) return null;
+
+  const base = clean.split(',')[0].split('-')[0].trim();
+  const baseKey = normalizeCityKey(base);
+  if (CITY_TO_PROVINCE[baseKey]) {
+    return CITY_TO_PROVINCE[baseKey];
+  }
+
+  const lower = clean.toLowerCase();
+  for (const [fullName, proper] of Object.entries(PROVINCE_NAME_MAP)) {
+    if (lower.includes(fullName)) return proper;
+  }
+
+  const tokens = lower.replace(/[^a-z]+/g, ' ').trim().split(/\s+/);
+  for (const token of tokens) {
+    if (PROVINCE_ALIASES[token]) return PROVINCE_ALIASES[token];
+  }
+
+  return null;
+}
+
+let provinceState = {
+  provinces: PROVINCES.map(p => ({ ...p, cities: [] })),
+  loaded: false,
+  error: false
+};
+
+// Load provinces and cities
 function loadCities() {
-  const grid = document.getElementById('citiesGrid');
+  const grid = document.getElementById('provincesGrid');
+  const panel = document.getElementById('provincePanel');
+  const title = document.getElementById('provinceTitle');
+  const list = document.getElementById('provinceCitiesList');
+  const empty = document.getElementById('provinceEmpty');
+  const clearBtn = document.getElementById('clearProvince');
   if (!grid) return;
+
+  const renderProvinces = () => {
+    grid.innerHTML = '';
+    provinceState.provinces.forEach(p => {
+      const count = p.cities.length;
+      grid.innerHTML += `
+        <button class="province-card" type="button" data-province="${p.name}">
+          <h2>${p.name}</h2>
+          <p>${p.type} &bull; ${count} ${count === 1 ? 'city' : 'cities'}</p>
+          <span class="btn">View Cities</span>
+        </button>
+      `;
+    });
+  };
+
+  const showProvince = (provinceName) => {
+    const selected = provinceState.provinces.find(p => p.name === provinceName);
+    if (!selected) return;
+
+    title.textContent = provinceName;
+    list.innerHTML = '';
+
+    if (provinceState.error) {
+      empty.textContent = 'Unable to load cities.';
+      empty.style.display = 'block';
+    } else if (!provinceState.loaded) {
+      empty.textContent = 'Loading cities...';
+      empty.style.display = 'block';
+    } else if (selected.cities.length === 0) {
+      empty.textContent = 'No cities available yet.';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      selected.cities.forEach(cityName => {
+        const href = `/city.html?city=${encodeURIComponent(cityName)}`;
+        list.innerHTML += `<a href="${href}" target="_blank">${cityName}</a>`;
+      });
+    }
+
+    panel.classList.add('active');
+    panel.style.display = 'block';
+    document.querySelectorAll('.province-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.province === provinceName);
+    });
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const clearSelection = () => {
+    panel.classList.remove('active');
+    panel.style.display = '';
+    title.textContent = 'Select a province or territory';
+    list.innerHTML = '';
+    empty.style.display = 'none';
+    document.querySelectorAll('.province-card').forEach(card => {
+      card.classList.remove('active');
+    });
+  };
+
+  grid.addEventListener('click', (event) => {
+    const card = event.target.closest('.province-card');
+    if (!card) return;
+    showProvince(card.dataset.province);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearSelection);
+  }
+
+  renderProvinces();
 
   fetch('/backend/api/cities.php?action=list')
     .then(r => r.json())
     .then(data => {
-      if (!data.success || !data.cities || data.cities.length === 0) {
-        grid.innerHTML = '<div class="no-listings">No cities available yet.</div>';
-        return;
-      }
+      const incomingCities = (data && data.cities) ? data.cities : [];
+      const cityNames = incomingCities
+        .map(city => (city && (city.name || city)) ? String(city.name || city) : '')
+        .map(name => name.trim())
+        .filter(name => name !== '');
 
-      const cities = data.cities
-        .map(city => ({ name: (city && (city.name || city)) ? String(city.name || city) : '' }))
-        .filter(c => c.name.trim() !== '')
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-
-      grid.innerHTML = '';
-      cities.forEach(city => {
-        const name = city.name;
-        const href = `/city.html?city=${encodeURIComponent(name)}`;
-        grid.innerHTML += `
-          <a href="${href}" class="city-card" target="_blank">
-            <h2>${name}</h2>
-            <p>Browse and post items in your community</p>
-            <button class="btn">Enter Marketplace</button>
-          </a>
-        `;
+      const provinceMap = new Map(PROVINCES.map(p => [p.name, { ...p, cities: [] }]));
+      cityNames.forEach(name => {
+        const key = name.toLowerCase();
+        const provinceName = inferProvince(name);
+        if (provinceName && provinceMap.has(provinceName)) {
+          provinceMap.get(provinceName).cities.push(name);
+        }
       });
+
+      provinceState = {
+        provinces: PROVINCES.map(p => {
+          const entry = provinceMap.get(p.name);
+          return {
+            ...p,
+            cities: entry ? entry.cities.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })) : []
+          };
+        }),
+        loaded: true,
+        error: false
+      };
+
+      renderProvinces();
     })
     .catch(() => {
-      grid.innerHTML = '<div class="no-listings">Unable to load cities.</div>';
+      provinceState.error = true;
+      renderProvinces();
     });
 }
 // Check user session
