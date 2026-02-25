@@ -720,7 +720,11 @@ function admin_column_exists($conn, $table, $column) {
     $safeTable = str_replace('`', '``', $table);
     $safeColumn = $conn->real_escape_string($column);
     $sql = "SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'";
-    $res = $conn->query($sql);
+    try {
+        $res = $conn->query($sql);
+    } catch (Throwable $e) {
+        return false;
+    }
     return $res && $res->num_rows > 0;
 }
 

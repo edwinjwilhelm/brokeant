@@ -34,13 +34,22 @@ if ($action === 'check') {
 }
 
 function get_local_admin_cities($conn, $user_id) {
-    $stmt = $conn->prepare("SELECT city FROM local_admins WHERE user_id = ? AND status = 'active'");
+    try {
+        $stmt = $conn->prepare("SELECT city FROM local_admins WHERE user_id = ? AND status = 'active'");
+    } catch (Throwable $e) {
+        return [];
+    }
     if (!$stmt) {
         return [];
     }
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    try {
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    } catch (Throwable $e) {
+        $stmt->close();
+        return [];
+    }
     $cities = [];
     while ($row = $result->fetch_assoc()) {
         $cities[] = $row['city'];
@@ -53,7 +62,22 @@ function local_admin_column_exists($conn, $table, $column) {
     $safeTable = str_replace('`', '``', $table);
     $safeColumn = $conn->real_escape_string($column);
     $sql = "SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'";
-    $res = $conn->query($sql);
+    try {
+        $res = $conn->query($sql);
+    } catch (Throwable $e) {
+        return false;
+    }
+    return $res && $res->num_rows > 0;
+}
+
+function local_admin_table_exists($conn, $table) {
+    $safeTable = $conn->real_escape_string($table);
+    $sql = "SHOW TABLES LIKE '{$safeTable}'";
+    try {
+        $res = $conn->query($sql);
+    } catch (Throwable $e) {
+        return false;
+    }
     return $res && $res->num_rows > 0;
 }
 
@@ -65,13 +89,21 @@ function check_local_admin($conn) {
     $user_id = get_user_id();
     $cities = get_local_admin_cities($conn, $user_id);
     $user_email = '';
-    $stmt = $conn->prepare("SELECT email FROM users WHERE id = ?");
+    try {
+        $stmt = $conn->prepare("SELECT email FROM users WHERE id = ?");
+    } catch (Throwable $e) {
+        $stmt = false;
+    }
     if ($stmt) {
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $row = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        $user_email = $row['email'] ?? '';
+        try {
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            $user_email = $row['email'] ?? '';
+        } catch (Throwable $e) {
+            $stmt->close();
+        }
     }
     echo json_encode([
         'logged_in' => true,
@@ -103,6 +135,12 @@ function request_local_admin($conn) {
     if ($admin_name === '' || $admin_phone === '' || $admin_email === '' || $city === '') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Name, phone, email, and city are required']);
+        return;
+    }
+
+    if (!local_admin_table_exists($conn, 'local_admin_requests')) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Local admin requests table is not installed']);
         return;
     }
 
@@ -166,7 +204,11 @@ function request_local_admin($conn) {
     }
 
     $user = ['email' => '', 'name' => ''];
-    $user_stmt = $conn->prepare("SELECT email, name FROM users WHERE id = ?");
+    try {
+        $user_stmt = $conn->prepare("SELECT email, name FROM users WHERE id = ?");
+    } catch (Throwable $e) {
+        $user_stmt = false;
+    }
     if ($user_stmt) {
         $user_stmt->bind_param("i", $user_id);
         $user_stmt->execute();
