@@ -716,9 +716,22 @@ function add_city_access($conn) {
 }
 
 // Local admin requests
+function admin_column_exists($conn, $table, $column) {
+    $safeTable = str_replace('`', '``', $table);
+    $safeColumn = $conn->real_escape_string($column);
+    $sql = "SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'";
+    $res = $conn->query($sql);
+    return $res && $res->num_rows > 0;
+}
+
 function get_local_admin_requests($conn) {
+    $hasName = admin_column_exists($conn, 'local_admin_requests', 'admin_name');
+    $hasPhone = admin_column_exists($conn, 'local_admin_requests', 'admin_phone');
+    $nameExpr = $hasName ? "r.admin_name" : "'' AS admin_name";
+    $phoneExpr = $hasPhone ? "r.admin_phone" : "'' AS admin_phone";
+
     $result = $conn->query("
-        SELECT r.id, r.user_id, r.city, r.reason, r.admin_name, r.admin_phone, r.status, r.created_at,
+        SELECT r.id, r.user_id, r.city, r.reason, {$nameExpr}, {$phoneExpr}, r.status, r.created_at,
                u.email, u.name
         FROM local_admin_requests r
         JOIN users u ON r.user_id = u.id
@@ -742,7 +755,12 @@ function approve_local_admin_request($conn) {
         return;
     }
 
-    $stmt = $conn->prepare("SELECT user_id, city, admin_name, admin_phone FROM local_admin_requests WHERE id = ?");
+    $hasReqName = admin_column_exists($conn, 'local_admin_requests', 'admin_name');
+    $hasReqPhone = admin_column_exists($conn, 'local_admin_requests', 'admin_phone');
+    $reqNameExpr = $hasReqName ? "admin_name" : "'' AS admin_name";
+    $reqPhoneExpr = $hasReqPhone ? "admin_phone" : "'' AS admin_phone";
+
+    $stmt = $conn->prepare("SELECT user_id, city, {$reqNameExpr}, {$reqPhoneExpr} FROM local_admin_requests WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -763,8 +781,15 @@ function approve_local_admin_request($conn) {
     $upd->execute();
     $upd->close();
 
-    $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, 'active')");
-    $ins->bind_param("isss", $user_id, $city, $admin_name, $admin_phone);
+    $hasAdminName = admin_column_exists($conn, 'local_admins', 'admin_name');
+    $hasAdminPhone = admin_column_exists($conn, 'local_admins', 'admin_phone');
+    if ($hasAdminName && $hasAdminPhone) {
+        $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, 'active')");
+        $ins->bind_param("isss", $user_id, $city, $admin_name, $admin_phone);
+    } else {
+        $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, status) VALUES (?, ?, 'active')");
+        $ins->bind_param("is", $user_id, $city);
+    }
     $ins->execute();
     $ins->close();
 
@@ -793,8 +818,13 @@ function reject_local_admin_request($conn) {
 }
 
 function get_local_admins($conn) {
+    $hasName = admin_column_exists($conn, 'local_admins', 'admin_name');
+    $hasPhone = admin_column_exists($conn, 'local_admins', 'admin_phone');
+    $nameExpr = $hasName ? "la.admin_name" : "'' AS admin_name";
+    $phoneExpr = $hasPhone ? "la.admin_phone" : "'' AS admin_phone";
+
     $result = $conn->query("
-        SELECT la.id, la.user_id, la.city, la.admin_name, la.admin_phone, la.status, la.created_at,
+        SELECT la.id, la.user_id, la.city, {$nameExpr}, {$phoneExpr}, la.status, la.created_at,
                u.email, u.name
         FROM local_admins la
         JOIN users u ON la.user_id = u.id

@@ -49,6 +49,14 @@ function get_local_admin_cities($conn, $user_id) {
     return $cities;
 }
 
+function local_admin_column_exists($conn, $table, $column) {
+    $safeTable = str_replace('`', '``', $table);
+    $safeColumn = $conn->real_escape_string($column);
+    $sql = "SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'";
+    $res = $conn->query($sql);
+    return $res && $res->num_rows > 0;
+}
+
 function check_local_admin($conn) {
     if (!is_logged_in()) {
         echo json_encode(['logged_in' => false]);
@@ -81,20 +89,46 @@ function request_local_admin($conn) {
         return;
     }
 
-    $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, ?, 'requested')");
-    if (!$stmt) {
+    // Backward-compatible insert: support older DB schema without admin_name/admin_phone columns.
+    $hasAdminName = local_admin_column_exists($conn, 'local_admin_requests', 'admin_name');
+    $hasAdminPhone = local_admin_column_exists($conn, 'local_admin_requests', 'admin_phone');
+
+    try {
+        if ($hasAdminName && $hasAdminPhone) {
+            $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, ?, 'requested')");
+            if (!$stmt) {
+                echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
+                return;
+            }
+            $stmt->bind_param("issss", $user_id, $city, $reason, $admin_name, $admin_phone);
+        } else {
+            $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, status) VALUES (?, ?, ?, 'requested')");
+            if (!$stmt) {
+                echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
+                return;
+            }
+            $stmt->bind_param("iss", $user_id, $city, $reason);
+        }
+        $ok = $stmt->execute();
+        $inserted = $ok && ($stmt->affected_rows > 0);
+        $stmt->close();
+    } catch (Throwable $e) {
+        http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
         return;
     }
-    $stmt->bind_param("issss", $user_id, $city, $reason, $admin_name, $admin_phone);
-    $ok = $stmt->execute();
-    $stmt->close();
 
+    $user = ['email' => '', 'name' => ''];
     $user_stmt = $conn->prepare("SELECT email, name FROM users WHERE id = ?");
-    $user_stmt->bind_param("i", $user_id);
-    $user_stmt->execute();
-    $user = $user_stmt->get_result()->fetch_assoc();
-    $user_stmt->close();
+    if ($user_stmt) {
+        $user_stmt->bind_param("i", $user_id);
+        $user_stmt->execute();
+        $row = $user_stmt->get_result()->fetch_assoc();
+        if ($row) {
+            $user = $row;
+        }
+        $user_stmt->close();
+    }
 
     $subject = "Local Admin request: {$city}";
     $body = "A new Local Admin request was submitted.\n\n"
@@ -104,9 +138,11 @@ function request_local_admin($conn) {
           . "Phone: {$admin_phone}\n"
           . "City: {$city}\n"
           . "Reason: {$reason}\n";
-    send_admin_alert($subject, $body);
+    if ($inserted) {
+        send_admin_alert($subject, $body);
+    }
 
-    if ($ok) {
+    if ($inserted) {
         echo json_encode(['success' => true, 'message' => 'Request submitted']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Request already exists']);
