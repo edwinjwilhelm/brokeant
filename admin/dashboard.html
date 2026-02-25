@@ -2100,11 +2100,12 @@
                 document.getElementById('localAdminRequestsTable').innerHTML = '<p>No local admin requests yet.</p>';
                 return;
             }
-            let html = '<table><thead><tr><th>User</th><th>Name</th><th>Phone</th><th>City</th><th>Reason</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>User</th><th>Name</th><th>Phone</th><th>Applicant Email</th><th>Province</th><th>City</th><th>Source</th><th>Reason</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>';
             rows.forEach(row => {
                 const badgeClass = row.status === 'approved'
                     ? 'badge badge-approved'
                     : (row.status === 'rejected' ? 'badge badge-failed' : 'badge badge-requested');
+                const source = row.request_source || 'legacy';
                 let actions = '';
                 if (row.status === 'requested') {
                     actions = `<button class="action-btn btn-verify" onclick="approveLocalAdminRequest(${row.id})">Approve</button>
@@ -2116,7 +2117,10 @@
                     <td>${row.email}</td>
                     <td>${row.admin_name || ''}</td>
                     <td>${row.admin_phone || ''}</td>
+                    <td>${row.admin_email || row.email || ''}</td>
+                    <td>${row.province || ''}</td>
                     <td>${row.city}</td>
+                    <td>${source}</td>
                     <td>${row.reason || ''}</td>
                     <td><span class="${badgeClass}">${row.status}</span></td>
                     <td>${new Date(row.created_at).toLocaleDateString()}</td>

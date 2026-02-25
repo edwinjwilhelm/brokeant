@@ -167,6 +167,12 @@
         <label for="applyPhone">Phone Number</label>
         <input type="tel" id="applyPhone" placeholder="Phone number" required>
 
+        <label for="applyEmail">Email Address</label>
+        <input type="email" id="applyEmail" placeholder="you@example.com" required>
+
+        <label for="applyProvince">Province/Territory</label>
+        <input type="text" id="applyProvince" placeholder="Saskatchewan">
+
         <label for="applyCity">Town/City</label>
         <input type="text" id="applyCity" placeholder="Your town name" required>
 
@@ -175,6 +181,7 @@
 
         <div class="apply-actions">
           <button class="btn btn-secondary" type="submit">Submit Application</button>
+          <a class="btn" id="applyByEmail" href="mailto:sales@brokeant.com?subject=BrokeAnt%20Local%20Admin%20Application" target="_blank" rel="noopener">Apply by Email</a>
           <a class="btn" href="https://www.brokeant.com/local-admin-dashboard.html" target="_blank" rel="noopener">Local Admin Dashboard</a>
         </div>
         <div id="applyStatus" class="status"></div>
@@ -183,16 +190,58 @@
   </div>
 
   <script>
+    if (window.location.hostname === 'brokeant.com') {
+      const canonical = 'https://www.brokeant.com' + window.location.pathname + window.location.search + window.location.hash;
+      window.location.replace(canonical);
+    }
+    const API_BASE = 'https://www.brokeant.com';
     const statusEl = document.getElementById('applyStatus');
     const loginPrompt = document.getElementById('loginPrompt');
     const form = document.getElementById('applyForm');
+    const applyByEmailBtn = document.getElementById('applyByEmail');
 
-    fetch('/backend/api/local-admin.php?action=check', { credentials: 'include' })
-      .then(r => r.json())
+    function updateApplyByEmailLink() {
+      const name = document.getElementById('applyName').value.trim();
+      const phone = document.getElementById('applyPhone').value.trim();
+      const email = document.getElementById('applyEmail').value.trim();
+      const province = document.getElementById('applyProvince').value.trim();
+      const city = document.getElementById('applyCity').value.trim();
+      const reason = document.getElementById('applyReason').value.trim();
+      const subject = encodeURIComponent('BrokeAnt Local Admin Application - ' + (city || 'New City'));
+      const body = encodeURIComponent(
+        'Name: ' + name + '\n'
+        + 'Phone: ' + phone + '\n'
+        + 'Email: ' + email + '\n'
+        + 'Province: ' + province + '\n'
+        + 'Town/City: ' + city + '\n'
+        + 'Reason: ' + reason + '\n'
+      );
+      applyByEmailBtn.href = 'mailto:sales@brokeant.com?subject=' + subject + '&body=' + body;
+    }
+
+    form.querySelectorAll('input, textarea').forEach(el => {
+      el.addEventListener('input', updateApplyByEmailLink);
+    });
+    updateApplyByEmailLink();
+
+    fetch(`${API_BASE}/backend/api/local-admin.php?action=check`, { credentials: 'include' })
+      .then(async (r) => {
+        const raw = await r.text();
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          throw new Error(`HTTP ${r.status}. ${raw.slice(0, 220) || 'No response body.'}`);
+        }
+      })
       .then(data => {
         if (!data.logged_in) {
           loginPrompt.style.display = 'block';
           form.querySelector('button[type="submit"]').disabled = true;
+          return;
+        }
+        if (data.user_email) {
+          document.getElementById('applyEmail').value = data.user_email;
+          updateApplyByEmailLink();
         }
       })
       .catch(() => {});
@@ -204,11 +253,13 @@
 
       const name = document.getElementById('applyName').value.trim();
       const phone = document.getElementById('applyPhone').value.trim();
+      const email = document.getElementById('applyEmail').value.trim();
+      const province = document.getElementById('applyProvince').value.trim();
       const city = document.getElementById('applyCity').value.trim();
       const reason = document.getElementById('applyReason').value.trim();
 
-      if (!name || !phone || !city) {
-        statusEl.textContent = 'Name, phone, and city are required.';
+      if (!name || !phone || !email || !city) {
+        statusEl.textContent = 'Name, phone, email, and city are required.';
         statusEl.className = 'status error';
         return;
       }
@@ -217,26 +268,42 @@
       formData.append('action', 'request');
       formData.append('admin_name', name);
       formData.append('admin_phone', phone);
+      formData.append('admin_email', email);
+      formData.append('province', province);
       formData.append('city', city);
       formData.append('reason', reason);
+      formData.append('request_source', 'web_form');
 
-      fetch('/backend/api/local-admin.php', {
+      fetch(`${API_BASE}/backend/api/local-admin.php`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
       })
-      .then(r => r.json())
+      .then(async (r) => {
+        const raw = await r.text();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          throw new Error(`HTTP ${r.status}. ${raw.slice(0, 260) || 'No response body.'}`);
+        }
+        if (!r.ok) {
+          throw new Error(data.message || `HTTP ${r.status}`);
+        }
+        return data;
+      })
       .then(data => {
         if (data.success) {
           statusEl.textContent = 'Application submitted. We will review it soon.';
           form.reset();
+          updateApplyByEmailLink();
         } else {
           statusEl.textContent = data.message || 'Unable to submit application.';
           statusEl.className = 'status error';
         }
       })
-      .catch(() => {
-        statusEl.textContent = 'Unable to submit application.';
+      .catch((error) => {
+        statusEl.textContent = error.message || 'Unable to submit application.';
         statusEl.className = 'status error';
       });
     });

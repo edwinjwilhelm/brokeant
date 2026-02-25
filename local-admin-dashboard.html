@@ -109,6 +109,11 @@
   </div>
 
   <script>
+    if (window.location.hostname === 'brokeant.com') {
+      const canonical = 'https://www.brokeant.com' + window.location.pathname + window.location.search + window.location.hash;
+      window.location.replace(canonical);
+    }
+    const API_BASE = 'https://www.brokeant.com';
     let localAdminCities = [];
 
     function renderAdminInfo(data) {
@@ -128,7 +133,7 @@
     async function loadQueue() {
       const target = document.getElementById('queueTable');
       try {
-        const response = await fetch('/backend/api/local-admin.php?action=get_queue', { credentials: 'include' });
+        const response = await fetch(`${API_BASE}/backend/api/local-admin.php?action=get_queue`, { credentials: 'include' });
         const data = await response.json();
         if (!data.success) {
           target.textContent = data.message || 'Unable to load queue.';
@@ -165,7 +170,7 @@
       const formData = new FormData();
       formData.append('action', action);
       formData.append('listing_id', listingId);
-      await fetch('/backend/api/local-admin.php', {
+      await fetch(`${API_BASE}/backend/api/local-admin.php`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
@@ -173,7 +178,7 @@
       loadQueue();
     }
 
-    fetch('/backend/api/local-admin.php?action=check', { credentials: 'include' })
+    fetch(`${API_BASE}/backend/api/local-admin.php?action=check`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
         renderAdminInfo(data);

@@ -727,11 +727,19 @@ function admin_column_exists($conn, $table, $column) {
 function get_local_admin_requests($conn) {
     $hasName = admin_column_exists($conn, 'local_admin_requests', 'admin_name');
     $hasPhone = admin_column_exists($conn, 'local_admin_requests', 'admin_phone');
+    $hasApplicantEmail = admin_column_exists($conn, 'local_admin_requests', 'admin_email');
+    $hasProvince = admin_column_exists($conn, 'local_admin_requests', 'province');
+    $hasSource = admin_column_exists($conn, 'local_admin_requests', 'request_source');
+    $hasReason = admin_column_exists($conn, 'local_admin_requests', 'reason');
     $nameExpr = $hasName ? "r.admin_name" : "'' AS admin_name";
     $phoneExpr = $hasPhone ? "r.admin_phone" : "'' AS admin_phone";
+    $applicantEmailExpr = $hasApplicantEmail ? "r.admin_email" : "u.email AS admin_email";
+    $provinceExpr = $hasProvince ? "r.province" : "'' AS province";
+    $sourceExpr = $hasSource ? "r.request_source" : "'legacy' AS request_source";
+    $reasonExpr = $hasReason ? "r.reason" : "'' AS reason";
 
     $result = $conn->query("
-        SELECT r.id, r.user_id, r.city, r.reason, {$nameExpr}, {$phoneExpr}, r.status, r.created_at,
+        SELECT r.id, r.user_id, r.city, {$reasonExpr}, {$nameExpr}, {$phoneExpr}, {$applicantEmailExpr}, {$provinceExpr}, {$sourceExpr}, r.status, r.created_at,
                u.email, u.name
         FROM local_admin_requests r
         JOIN users u ON r.user_id = u.id
@@ -757,10 +765,14 @@ function approve_local_admin_request($conn) {
 
     $hasReqName = admin_column_exists($conn, 'local_admin_requests', 'admin_name');
     $hasReqPhone = admin_column_exists($conn, 'local_admin_requests', 'admin_phone');
+    $hasReqEmail = admin_column_exists($conn, 'local_admin_requests', 'admin_email');
+    $hasReqProvince = admin_column_exists($conn, 'local_admin_requests', 'province');
     $reqNameExpr = $hasReqName ? "admin_name" : "'' AS admin_name";
     $reqPhoneExpr = $hasReqPhone ? "admin_phone" : "'' AS admin_phone";
+    $reqEmailExpr = $hasReqEmail ? "admin_email" : "'' AS admin_email";
+    $reqProvinceExpr = $hasReqProvince ? "province" : "'' AS province";
 
-    $stmt = $conn->prepare("SELECT user_id, city, {$reqNameExpr}, {$reqPhoneExpr} FROM local_admin_requests WHERE id = ?");
+    $stmt = $conn->prepare("SELECT user_id, city, {$reqNameExpr}, {$reqPhoneExpr}, {$reqEmailExpr}, {$reqProvinceExpr} FROM local_admin_requests WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -775,6 +787,8 @@ function approve_local_admin_request($conn) {
     $city = $row['city'];
     $admin_name = $row['admin_name'] ?? '';
     $admin_phone = $row['admin_phone'] ?? '';
+    $admin_email = $row['admin_email'] ?? '';
+    $province = $row['province'] ?? '';
 
     $upd = $conn->prepare("UPDATE local_admin_requests SET status = 'approved' WHERE id = ?");
     $upd->bind_param("i", $id);
@@ -783,15 +797,32 @@ function approve_local_admin_request($conn) {
 
     $hasAdminName = admin_column_exists($conn, 'local_admins', 'admin_name');
     $hasAdminPhone = admin_column_exists($conn, 'local_admins', 'admin_phone');
-    if ($hasAdminName && $hasAdminPhone) {
-        $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, 'active')");
-        $ins->bind_param("isss", $user_id, $city, $admin_name, $admin_phone);
-    } else {
-        $ins = $conn->prepare("INSERT IGNORE INTO local_admins (user_id, city, status) VALUES (?, ?, 'active')");
-        $ins->bind_param("is", $user_id, $city);
+    $hasAdminEmail = admin_column_exists($conn, 'local_admins', 'admin_email');
+    $hasAdminProvince = admin_column_exists($conn, 'local_admins', 'province');
+    $adminCols = ['user_id', 'city'];
+    $adminVals = [intval($user_id), "'" . $conn->real_escape_string($city) . "'"];
+    if ($hasAdminName) {
+        $adminCols[] = 'admin_name';
+        $adminVals[] = "'" . $conn->real_escape_string($admin_name) . "'";
     }
-    $ins->execute();
-    $ins->close();
+    if ($hasAdminPhone) {
+        $adminCols[] = 'admin_phone';
+        $adminVals[] = "'" . $conn->real_escape_string($admin_phone) . "'";
+    }
+    if ($hasAdminEmail) {
+        $adminCols[] = 'admin_email';
+        $adminVals[] = "'" . $conn->real_escape_string($admin_email) . "'";
+    }
+    if ($hasAdminProvince) {
+        $adminCols[] = 'province';
+        $adminVals[] = "'" . $conn->real_escape_string($province) . "'";
+    }
+    if (admin_column_exists($conn, 'local_admins', 'status')) {
+        $adminCols[] = 'status';
+        $adminVals[] = "'active'";
+    }
+    $insertSql = "INSERT IGNORE INTO local_admins (" . implode(', ', $adminCols) . ") VALUES (" . implode(', ', $adminVals) . ")";
+    $conn->query($insertSql);
 
     add_user_city_access($conn, $user_id, $city);
 

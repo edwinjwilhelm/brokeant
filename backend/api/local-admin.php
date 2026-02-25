@@ -64,10 +64,20 @@ function check_local_admin($conn) {
     }
     $user_id = get_user_id();
     $cities = get_local_admin_cities($conn, $user_id);
+    $user_email = '';
+    $stmt = $conn->prepare("SELECT email FROM users WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        $user_email = $row['email'] ?? '';
+    }
     echo json_encode([
         'logged_in' => true,
         'is_local_admin' => !empty($cities),
-        'cities' => $cities
+        'cities' => $cities,
+        'user_email' => $user_email
     ]);
 }
 
@@ -80,41 +90,78 @@ function request_local_admin($conn) {
     $user_id = get_user_id();
     $admin_name = trim($_POST['admin_name'] ?? '');
     $admin_phone = trim($_POST['admin_phone'] ?? '');
+    $admin_email = trim($_POST['admin_email'] ?? '');
+    $province = trim($_POST['province'] ?? '');
     $city = trim($_POST['city'] ?? '');
     $reason = trim($_POST['reason'] ?? '');
+    $request_source = trim($_POST['request_source'] ?? 'web_form');
+    if ($request_source === '') {
+        $request_source = 'web_form';
+    }
+    $request_source = substr($request_source, 0, 32);
 
-    if ($admin_name === '' || $admin_phone === '' || $city === '') {
+    if ($admin_name === '' || $admin_phone === '' || $admin_email === '' || $city === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Name, phone, and city are required']);
+        echo json_encode(['success' => false, 'message' => 'Name, phone, email, and city are required']);
         return;
     }
 
-    // Backward-compatible insert: support older DB schema without admin_name/admin_phone columns.
+    // Backward-compatible insert: support mixed schema versions.
+    $hasUserId = local_admin_column_exists($conn, 'local_admin_requests', 'user_id');
+    $hasCity = local_admin_column_exists($conn, 'local_admin_requests', 'city');
+    if (!$hasUserId || !$hasCity) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Local admin table is missing required columns']);
+        return;
+    }
+
+    $hasReason = local_admin_column_exists($conn, 'local_admin_requests', 'reason');
     $hasAdminName = local_admin_column_exists($conn, 'local_admin_requests', 'admin_name');
     $hasAdminPhone = local_admin_column_exists($conn, 'local_admin_requests', 'admin_phone');
+    $hasAdminEmail = local_admin_column_exists($conn, 'local_admin_requests', 'admin_email');
+    $hasProvince = local_admin_column_exists($conn, 'local_admin_requests', 'province');
+    $hasSource = local_admin_column_exists($conn, 'local_admin_requests', 'request_source');
+    $hasStatus = local_admin_column_exists($conn, 'local_admin_requests', 'status');
 
     try {
-        if ($hasAdminName && $hasAdminPhone) {
-            $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, admin_name, admin_phone, status) VALUES (?, ?, ?, ?, ?, 'requested')");
-            if (!$stmt) {
-                echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
-                return;
-            }
-            $stmt->bind_param("issss", $user_id, $city, $reason, $admin_name, $admin_phone);
-        } else {
-            $stmt = $conn->prepare("INSERT IGNORE INTO local_admin_requests (user_id, city, reason, status) VALUES (?, ?, ?, 'requested')");
-            if (!$stmt) {
-                echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
-                return;
-            }
-            $stmt->bind_param("iss", $user_id, $city, $reason);
+        $columns = ['user_id', 'city'];
+        $values = [intval($user_id), "'" . $conn->real_escape_string($city) . "'"];
+
+        if ($hasReason) {
+            $columns[] = 'reason';
+            $values[] = "'" . $conn->real_escape_string($reason) . "'";
         }
-        $ok = $stmt->execute();
-        $inserted = $ok && ($stmt->affected_rows > 0);
-        $stmt->close();
+        if ($hasAdminName) {
+            $columns[] = 'admin_name';
+            $values[] = "'" . $conn->real_escape_string($admin_name) . "'";
+        }
+        if ($hasAdminPhone) {
+            $columns[] = 'admin_phone';
+            $values[] = "'" . $conn->real_escape_string($admin_phone) . "'";
+        }
+        if ($hasAdminEmail) {
+            $columns[] = 'admin_email';
+            $values[] = "'" . $conn->real_escape_string($admin_email) . "'";
+        }
+        if ($hasProvince) {
+            $columns[] = 'province';
+            $values[] = "'" . $conn->real_escape_string($province) . "'";
+        }
+        if ($hasSource) {
+            $columns[] = 'request_source';
+            $values[] = "'" . $conn->real_escape_string($request_source) . "'";
+        }
+        if ($hasStatus) {
+            $columns[] = 'status';
+            $values[] = "'requested'";
+        }
+
+        $sql = "INSERT IGNORE INTO local_admin_requests (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
+        $ok = $conn->query($sql);
+        $inserted = $ok && ($conn->affected_rows > 0);
     } catch (Throwable $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Unable to submit request']);
+        echo json_encode(['success' => false, 'message' => 'Unable to submit request: ' . $e->getMessage()]);
         return;
     }
 
@@ -126,6 +173,9 @@ function request_local_admin($conn) {
         $row = $user_stmt->get_result()->fetch_assoc();
         if ($row) {
             $user = $row;
+            if ($admin_email === '') {
+                $admin_email = $row['email'] ?? '';
+            }
         }
         $user_stmt->close();
     }
@@ -136,7 +186,10 @@ function request_local_admin($conn) {
           . "Email: " . ($user['email'] ?? '') . "\n"
           . "Name: {$admin_name}\n"
           . "Phone: {$admin_phone}\n"
+          . "Applicant Email: {$admin_email}\n"
+          . "Province: {$province}\n"
           . "City: {$city}\n"
+          . "Source: {$request_source}\n"
           . "Reason: {$reason}\n";
     if ($inserted) {
         send_admin_alert($subject, $body);
