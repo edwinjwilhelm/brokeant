@@ -2,5 +2,13 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /backend/
+Disallow: /my-listings.html
+Disallow: /post-listing.html
+Disallow: /payment-checkout.html
+Disallow: /payment-status.html
+Disallow: /reply-message.html
+Disallow: /forgot-password.html
+Disallow: /reset-password.html
+Disallow: /local-admin-dashboard.html
 
 Sitemap: https://www.brokeant.com/sitemap.xml
