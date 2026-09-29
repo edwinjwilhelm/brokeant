@@ -91,6 +91,8 @@ $token = getAuthToken();
 // Routes
 if ($action === 'admin_login') {
     admin_login($conn);
+} elseif ($action === 'change_admin_credentials' && verifyToken($token)) {
+    change_admin_credentials($conn);
 } elseif ($action === 'get_stats' && verifyToken($token)) {
     get_stats($conn);
 } elseif ($action === 'get_users' && verifyToken($token)) {
@@ -179,6 +181,76 @@ function admin_login($conn) {
         http_response_code(401);
         echo json_encode(['success' => false, 'error' => 'Invalid credentials']);
     }
+}
+
+// Change admin login email/password (updates .env)
+function change_admin_credentials($conn) {
+    $json = getJsonBody();
+    $current_password = $json['current_password'] ?? '';
+    $new_email = trim($json['new_email'] ?? '');
+    $new_password = $json['new_password'] ?? '';
+
+    if (!hash_equals(ADMIN_PASSWORD, $current_password)) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Current password is incorrect']);
+        return;
+    }
+    if ($new_email === '' || !filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid email address']);
+        return;
+    }
+    if (strlen($new_password) < 10) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'New password must be at least 10 characters']);
+        return;
+    }
+    if (strpos($new_email, "\n") !== false || strpos($new_password, "\n") !== false) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid characters in input']);
+        return;
+    }
+
+    $env_path = dirname(__DIR__, 2) . '/.env';
+    if (!is_readable($env_path) || !is_writable($env_path)) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Server cannot write to .env (check file permissions)']);
+        return;
+    }
+
+    $lines = file($env_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $found_email = false;
+    $found_password = false;
+    foreach ($lines as &$line) {
+        if (strpos(trim($line), '#') === 0 || strpos($line, '=') === false) {
+            continue;
+        }
+        $key = trim(explode('=', $line, 2)[0]);
+        if ($key === 'ADMIN_EMAIL') {
+            $line = 'ADMIN_EMAIL=' . $new_email;
+            $found_email = true;
+        } elseif ($key === 'ADMIN_PASSWORD') {
+            $line = 'ADMIN_PASSWORD=' . $new_password;
+            $found_password = true;
+        }
+    }
+    unset($line);
+    if (!$found_email) $lines[] = 'ADMIN_EMAIL=' . $new_email;
+    if (!$found_password) $lines[] = 'ADMIN_PASSWORD=' . $new_password;
+
+    $ok = file_put_contents($env_path, implode("\n", $lines) . "\n", LOCK_EX);
+    if ($ok === false) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to write .env file']);
+        return;
+    }
+
+    $new_token = hash('sha256', $new_email . $new_password);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Admin credentials updated',
+        'token' => $new_token
+    ]);
 }
 
 // Get statistics

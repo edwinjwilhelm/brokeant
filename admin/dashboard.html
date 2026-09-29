@@ -1076,6 +1076,7 @@
             <button class="tab" onclick="switchTab('payments')">💰 Payments</button>
             <button class="tab" onclick="switchTab('cities')">City Access</button>
             <button class="tab" onclick="switchTab('localadmins')">Local Admins</button>
+            <button class="tab" onclick="switchTab('settings')">🔑 Settings</button>
 
 
         </div>
@@ -1177,6 +1178,28 @@
                 <div id="localAdminsTable" class="loading">Loading local admins...</div>
             </div>
 
+            <div id="settings" class="tab-content">
+                <h2>Admin Login Settings</h2>
+                <div class="hint">Change the email and password used to log into this dashboard.</div>
+                <div id="settingsMessage"></div>
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="settingsCurrentPassword" autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label>New Admin Email</label>
+                    <input type="email" id="settingsNewEmail">
+                </div>
+                <div class="form-group">
+                    <label>New Password (min 10 characters)</label>
+                    <input type="password" id="settingsNewPassword" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="settingsConfirmPassword" autocomplete="new-password">
+                </div>
+                <button class="btn-save" onclick="changeAdminCredentials()">Update Credentials</button>
+            </div>
 
 
             </div>
@@ -2733,7 +2756,55 @@
 
         }
 
+        // Change admin login email/password
+        async function changeAdminCredentials() {
+            const msgEl = document.getElementById('settingsMessage');
+            msgEl.textContent = '';
 
+            const current_password = document.getElementById('settingsCurrentPassword').value;
+            const new_email = document.getElementById('settingsNewEmail').value.trim();
+            const new_password = document.getElementById('settingsNewPassword').value;
+            const confirm_password = document.getElementById('settingsConfirmPassword').value;
+
+            if (!current_password || !new_email || !new_password) {
+                msgEl.innerHTML = '<p style="color:#721c24;">All fields are required.</p>';
+                return;
+            }
+            if (new_password !== confirm_password) {
+                msgEl.innerHTML = '<p style="color:#721c24;">New password and confirmation do not match.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/backend/api/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentAdminToken
+                    },
+                    body: JSON.stringify({
+                        action: 'change_admin_credentials',
+                        current_password,
+                        new_email,
+                        new_password
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    currentAdminToken = data.token;
+                    sessionStorage.setItem('admin_token', currentAdminToken);
+                    document.getElementById('settingsCurrentPassword').value = '';
+                    document.getElementById('settingsNewPassword').value = '';
+                    document.getElementById('settingsConfirmPassword').value = '';
+                    msgEl.innerHTML = '<p style="color:#155724;">Credentials updated. Use the new email/password next time you log in.</p>';
+                } else {
+                    msgEl.innerHTML = '<p style="color:#721c24;">' + (data.error || 'Update failed') + '</p>';
+                }
+            } catch (error) {
+                msgEl.innerHTML = '<p style="color:#721c24;">Error: ' + error.message + '</p>';
+            }
+        }
     </script>
 
 
