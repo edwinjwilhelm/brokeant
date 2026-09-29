@@ -26,3 +26,6 @@
 
 /uploads/*
 !/uploads/.gitkeep
+
+# Secrets - do not commit
+/.env
